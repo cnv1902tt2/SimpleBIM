@@ -1,0 +1,53 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\CHUONG_BON\\source\\repos\\SimpleBIM.AS.tab\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}|SimpleBIM.AS.tab\\SimpleBIM.AS.tab.csproj|c:\\users\\chuong_bon\\source\\repos\\simplebim.as.tab\\simplebim.as.tab\\license\\licensemanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}|SimpleBIM.AS.tab\\SimpleBIM.AS.tab.csproj|solutionrelative:simplebim.as.tab\\license\\licensemanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{1F26F08B-B9E2-4FDE-A512-488B2ADE500C}|SimpleBIM.Installer\\SimpleBIM.Installer.csproj|C:\\Users\\CHUONG_BON\\source\\repos\\SimpleBIM.AS.tab\\simplebim.installer\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{1F26F08B-B9E2-4FDE-A512-488B2ADE500C}|SimpleBIM.Installer\\SimpleBIM.Installer.csproj|solutionrelative:simplebim.installer\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 0,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "LicenseManager.cs",
+              "DocumentMoniker": "C:\\Users\\CHUONG_BON\\source\\repos\\SimpleBIM.AS.tab\\SimpleBIM.AS.tab\\License\\LicenseManager.cs",
+              "RelativeDocumentMoniker": "SimpleBIM.AS.tab\\License\\LicenseManager.cs",
+              "ToolTip": "C:\\Users\\CHUONG_BON\\source\\repos\\SimpleBIM.AS.tab\\SimpleBIM.AS.tab\\License\\LicenseManager.cs",
+              "RelativeToolTip": "SimpleBIM.AS.tab\\License\\LicenseManager.cs",
+              "ViewState": "AgIAALkAAAAAAAAAAAAmwMIAAAA+AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-12-05T12:06:36.429Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "Program.cs",
+              "DocumentMoniker": "C:\\Users\\CHUONG_BON\\source\\repos\\SimpleBIM.AS.tab\\SimpleBIM.Installer\\Program.cs",
+              "RelativeDocumentMoniker": "SimpleBIM.Installer\\Program.cs",
+              "ToolTip": "C:\\Users\\CHUONG_BON\\source\\repos\\SimpleBIM.AS.tab\\SimpleBIM.Installer\\Program.cs",
+              "RelativeToolTip": "SimpleBIM.Installer\\Program.cs",
+              "ViewState": "AgIAAEkBAAAAAAAAAAAmwFUBAAARAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-12-05T12:04:06.414Z"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>SimpleBIM.AS.tab</RootNamespace>
+    <AssemblyName>SimpleBIM.AS.tab</AssemblyName>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <Deterministic>true</Deterministic>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Microsoft.VisualBasic" />
+    <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.13.0.4\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+    <Reference Include="RevitAPI">
+      <HintPath>C:\Program Files\Autodesk\Revit 2024\RevitAPI.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="RevitAPIUI">
+      <HintPath>C:\Program Files\Autodesk\Revit 2024\RevitAPIUI.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.CodeDom, Version=10.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.CodeDom.10.0.0\lib\net462\System.CodeDom.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Management" />
+    <Reference Include="System.Text.Json, Version=9.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xaml" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Xml" />
+    <Reference Include="WindowsBase" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="App.cs" />
+    <Compile Include="Commands\AdaptiveFromCSV.cs" />
+    <Compile Include="Commands\FinishFaceFloors.cs" />
+    <Compile Include="Commands\FinishRoof.cs" />
+    <Compile Include="Commands\FinishRoomsCeiling.cs" />
+    <Compile Include="Commands\FinishRoomsFloor.cs" />
+    <Compile Include="Commands\FinishRoomsWall.cs" />
+    <Compile Include="Commands\FinishSillDoor.cs" />
+    <Compile Include="Commands\TryWallFace.cs" />
+    <Compile Include="Commands\TryXago.cs" />
+    <Compile Include="Commands\WallsFromCAD.cs" />
+    <Compile Include="License\LicenseManager.cs" />
+    <Compile Include="License\LicenseWindow.xaml.cs">
+      <DependentUpon>LicenseWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="ShowLicenseCommand.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Icons\32\adaptivefromcsv32.png" />
+    <EmbeddedResource Include="Icons\32\finishfacefloors32.png" />
+    <EmbeddedResource Include="Icons\32\finishroof32.png" />
+    <EmbeddedResource Include="Icons\32\finishroomsceiling32.png" />
+    <EmbeddedResource Include="Icons\32\finishroomsfloor32.png" />
+    <EmbeddedResource Include="Icons\32\finishroomswall32.png" />
+    <EmbeddedResource Include="Icons\32\finishsilldoor32.png" />
+    <EmbeddedResource Include="Icons\32\trywallface32.png" />
+    <EmbeddedResource Include="Icons\32\wallsfromcad32.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Icons\16\tryxago16.png" />
+    <EmbeddedResource Include="Icons\32\tryxago32.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Icons\16\adaptivefromcsv16.png" />
+    <EmbeddedResource Include="Icons\16\finishfacefloors16.png" />
+    <EmbeddedResource Include="Icons\16\finishroof16.png" />
+    <EmbeddedResource Include="Icons\16\finishroomsceiling16.png" />
+    <EmbeddedResource Include="Icons\16\finishroomsfloor16.png" />
+    <EmbeddedResource Include="Icons\16\finishroomswall16.png" />
+    <EmbeddedResource Include="Icons\16\finishsilldoor16.png" />
+    <EmbeddedResource Include="Icons\16\trywallface16.png" />
+    <EmbeddedResource Include="Icons\16\wallsfromcad16.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Icons\16\license16.png" />
+    <EmbeddedResource Include="Icons\32\license32.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Page Include="License\LicenseWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>echo === COPY TO SOLUTION FOLDER ===
+
+REM 1. Xác định solution folder (một cấp lên)
+set SOLUTION_DIR=..\..
+
+REM 2. Copy file installer EXE
+if exist "$(TargetPath)" (
+    copy /Y "$(TargetPath)" "%25SOLUTION_DIR%25\SimpleBIM.AS.tab.dll"
+    echo ✓ Copied: SimpleBIM.AS.tab.dll
+)
+REM 5. Hiển thị đường dẫn
+echo.
+echo ============================================
+echo FILES COPIED TO SOLUTION FOLDER:
+echo Location: %25SOLUTION_DIR%25
+echo 1. SimpleBIM.AS.tab.dll</PostBuildEvent>
+  </PropertyGroup>
+</Project>
