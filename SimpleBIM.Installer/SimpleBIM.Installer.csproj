@@ -28,7 +28,7 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
+    <OutputPath>..\output\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -71,21 +71,11 @@
     </PreBuildEvent>
   </PropertyGroup>
   <PropertyGroup>
-    <PostBuildEvent>echo === COPY TO SOLUTION FOLDER ===
+    <PostBuildEvent>REM Tạo thư mục Confusednếu chưa có
+mkdir "$(TargetDir)Confused"
 
-REM 1. Xác định solution folder (một cấp lên)
-set SOLUTION_DIR=..\..\..
-
-REM 2. Copy file installer EXE
-if exist "$(TargetPath)" (
-    copy /Y "$(TargetPath)" "%25SOLUTION_DIR%25\SimpleBIM_Setup.exe"
-    echo ✓ Copied: SimpleBIM_Setup.exe
-)
-REM 5. Hiển thị đường dẫn
-echo.
-echo ============================================
-echo FILES COPIED TO SOLUTION FOLDER:
-echo Location: %25SOLUTION_DIR%25
-echo 1. SimpleBIM_Setup.exe</PostBuildEvent>
+REM Copy file Installer
+copy /Y "$(TargetDir)SimpleBIM.Installer.exe" "$(TargetDir)Confused\"
+</PostBuildEvent>
   </PropertyGroup>
 </Project>

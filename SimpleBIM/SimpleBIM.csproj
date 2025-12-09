@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>SimpleBIM</RootNamespace>
+    <AssemblyName>SimpleBIM</AssemblyName>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <Deterministic>true</Deterministic>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>..\output\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+  </PropertyGroup>
+  <PropertyGroup>
+    <SignAssembly>false</SignAssembly>
+  </PropertyGroup>
+  <PropertyGroup>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Microsoft.VisualBasic" />
+    <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.13.0.4\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+    <Reference Include="RevitAPI">
+      <HintPath>C:\Program Files\Autodesk\Revit 2024\RevitAPI.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="RevitAPIUI">
+      <HintPath>C:\Program Files\Autodesk\Revit 2024\RevitAPIUI.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.CodeDom, Version=10.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.CodeDom.10.0.0\lib\net462\System.CodeDom.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Management" />
+    <Reference Include="System.Text.Json, Version=9.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xaml" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Xml" />
+    <Reference Include="WindowsBase" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="App.cs" />
+    <Compile Include="Commands\As\AdaptiveFromCSV.cs" />
+    <Compile Include="Commands\As\FinishFaceFloors.cs" />
+    <Compile Include="Commands\As\FinishRoof.cs" />
+    <Compile Include="Commands\As\FinishRoomsCeiling.cs" />
+    <Compile Include="Commands\As\FinishRoomsFloor.cs" />
+    <Compile Include="Commands\As\FinishRoomsWall.cs" />
+    <Compile Include="Commands\As\FinishSillDoor.cs" />
+    <Compile Include="Commands\As\TryWallFace.cs" />
+    <Compile Include="Commands\As\TryXago.cs" />
+    <Compile Include="Commands\As\WallsFromCAD.cs" />
+    <Compile Include="Commands\MEPF\AlignMEP3D.cs" />
+    <Compile Include="Commands\MEPF\AutoAlignConnectPipes.cs" />
+    <Compile Include="Commands\MEPF\CableTraysFromCAD.cs" />
+    <Compile Include="Commands\MEPF\CreateSheets.cs" />
+    <Compile Include="Commands\MEPF\DuctsFromCAD.cs" />
+    <Compile Include="Commands\MEPF\DuplicateViews.cs" />
+    <Compile Include="Commands\MEPF\ExportImportFilterColor.cs" />
+    <Compile Include="Commands\MEPF\FamilyNameStyle.cs" />
+    <Compile Include="Commands\MEPF\PipeSlopeChanges.cs" />
+    <Compile Include="Commands\MEPF\PipeSlopeConverter.cs" />
+    <Compile Include="Commands\MEPF\PlaceViews.cs" />
+    <Compile Include="Commands\MEPF\ReorderSheets.cs" />
+    <Compile Include="Commands\MEPF\ViewTemplatesRename.cs" />
+    <Compile Include="Commands\Qs\DeleteDuplicates.cs" />
+    <Compile Include="Commands\Qs\ExportSchedules.cs" />
+    <Compile Include="Commands\Qs\FamilyNamesExportImport.cs" />
+    <Compile Include="Commands\Qs\MaterialNamesExportImport.cs" />
+    <Compile Include="Commands\Qs\TinhNangTimKiem.cs" />
+    <Compile Include="Commands\Qs\TypeNamesExportImport.cs" />
+    <Compile Include="Commands\Qs\VNNormCodes.cs" />
+    <Compile Include="License\LicenseManager.cs" />
+    <Compile Include="License\LicenseWindow.xaml.cs">
+      <DependentUpon>LicenseWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Ribbon\Panels\AsPanel.cs" />
+    <Compile Include="Ribbon\Panels\MEPFPanel.cs" />
+    <Compile Include="Ribbon\Panels\QsPanel.cs" />
+    <Compile Include="Ribbon\RibbonManager.cs" />
+    <Compile Include="ShowLicenseCommand.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Icons\32\adaptivefromcsv32.png" />
+    <EmbeddedResource Include="Icons\32\finishfacefloors32.png" />
+    <EmbeddedResource Include="Icons\32\finishroof32.png" />
+    <EmbeddedResource Include="Icons\32\finishroomsceiling32.png" />
+    <EmbeddedResource Include="Icons\32\finishroomsfloor32.png" />
+    <EmbeddedResource Include="Icons\32\finishroomswall32.png" />
+    <EmbeddedResource Include="Icons\32\finishsilldoor32.png" />
+    <EmbeddedResource Include="Icons\32\trywallface32.png" />
+    <EmbeddedResource Include="Icons\32\wallsfromcad32.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Icons\16\tryxago16.png" />
+    <EmbeddedResource Include="Icons\32\tryxago32.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Icons\16\adaptivefromcsv16.png" />
+    <EmbeddedResource Include="Icons\16\finishfacefloors16.png" />
+    <EmbeddedResource Include="Icons\16\finishroof16.png" />
+    <EmbeddedResource Include="Icons\16\finishroomsceiling16.png" />
+    <EmbeddedResource Include="Icons\16\finishroomsfloor16.png" />
+    <EmbeddedResource Include="Icons\16\finishroomswall16.png" />
+    <EmbeddedResource Include="Icons\16\finishsilldoor16.png" />
+    <EmbeddedResource Include="Icons\16\trywallface16.png" />
+    <EmbeddedResource Include="Icons\16\wallsfromcad16.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Icons\16\license16.png" />
+    <EmbeddedResource Include="Icons\32\license32.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Page Include="License\LicenseWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Icons\16\alignmep3d16.png" />
+    <EmbeddedResource Include="Icons\16\autoalign16.png" />
+    <EmbeddedResource Include="Icons\16\cabletrays16.png" />
+    <EmbeddedResource Include="Icons\16\createsheets16.png" />
+    <EmbeddedResource Include="Icons\16\ducts16.png" />
+    <EmbeddedResource Include="Icons\16\duplicateviews16.png" />
+    <EmbeddedResource Include="Icons\16\familyname16.png" />
+    <EmbeddedResource Include="Icons\16\filtercolor16.png" />
+    <EmbeddedResource Include="Icons\16\pipeslopechanges16.png" />
+    <EmbeddedResource Include="Icons\16\pipeslopeconverter16.png" />
+    <EmbeddedResource Include="Icons\16\placeviews16.png" />
+    <EmbeddedResource Include="Icons\16\reordersheets16.png" />
+    <EmbeddedResource Include="Icons\16\viewtemplates16.png" />
+    <EmbeddedResource Include="Icons\32\alignmep3d32.png" />
+    <EmbeddedResource Include="Icons\32\autoalign32.png" />
+    <EmbeddedResource Include="Icons\32\cabletrays32.png" />
+    <EmbeddedResource Include="Icons\32\createsheets32.png" />
+    <EmbeddedResource Include="Icons\32\ducts32.png" />
+    <EmbeddedResource Include="Icons\32\duplicateviews32.png" />
+    <EmbeddedResource Include="Icons\32\familyname32.png" />
+    <EmbeddedResource Include="Icons\32\filtercolor32.png" />
+    <EmbeddedResource Include="Icons\32\pipeslopechanges32.png" />
+    <EmbeddedResource Include="Icons\32\pipeslopeconverter32.png" />
+    <EmbeddedResource Include="Icons\32\placeviews32.png" />
+    <EmbeddedResource Include="Icons\32\reordersheets32.png" />
+    <EmbeddedResource Include="Icons\32\viewtemplates32.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Icons\32\deleteduplicates32.png" />
+    <EmbeddedResource Include="Icons\32\exportschedules32.png" />
+    <EmbeddedResource Include="Icons\32\familynamesexportimport32.png" />
+    <EmbeddedResource Include="Icons\32\materialnamesexportimport32.png" />
+    <EmbeddedResource Include="Icons\32\tinhnangtimnkiem32.png" />
+    <EmbeddedResource Include="Icons\32\typenamesexportimport32.png" />
+    <EmbeddedResource Include="Icons\32\vnnormcodes32.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Icons\16\deleteduplicates16.png" />
+    <EmbeddedResource Include="Icons\16\exportschedules16.png" />
+    <EmbeddedResource Include="Icons\16\familynamesexportimport16.png" />
+    <EmbeddedResource Include="Icons\16\materialnamesexportimport16.png" />
+    <EmbeddedResource Include="Icons\16\tinhnangtimnkiem16.png" />
+    <EmbeddedResource Include="Icons\16\typenamesexportimport16.png" />
+    <EmbeddedResource Include="Icons\16\vnnormcodes16.png" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>
+    </PostBuildEvent>
+  </PropertyGroup>
+</Project>

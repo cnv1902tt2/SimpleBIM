@@ -2,19 +2,18 @@
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using IWshRuntimeLibrary;
 
 namespace SimpleBIM.Installer
 {
     internal class Program
     {
-        private const string AddinName = "SimpleBIM.AS.tab";
+        private const string AddinName = "SimpleBIM";
         private const string CompanyName = "SimpleBIM";
         private static readonly string[] RevitVersions = { "2025", "2024", "2023", "2022", "2021", "2020", "2019", "2018" };
 
         static void Main(string[] args)
         {
-            Console.Title = "SimpleBIM AS Tab - Installer";
+            Console.Title = "SimpleBIM - Installer";
             Console.OutputEncoding = System.Text.Encoding.UTF8;
 
             try
@@ -66,16 +65,17 @@ namespace SimpleBIM.Installer
             {
                 Console.Clear();
                 Console.WriteLine("╔══════════════════════════════════════════════════╗");
-                Console.WriteLine("║          SIMPLEBIM AS TAB - INSTALLER           ║");
+                Console.WriteLine("║          SIMPLEBIM - INSTALLER           ║");
                 Console.WriteLine("╠══════════════════════════════════════════════════╣");
                 Console.WriteLine("║                                                  ║");
                 Console.WriteLine("║   1. 📥 CÀI ĐẶT ADD-IN                          ║");
                 Console.WriteLine("║   2. 🗑️  GỠ CÀI ĐẶT                             ║");
                 Console.WriteLine("║   3. ℹ️  THÔNG TIN CÀI ĐẶT                      ║");
-                Console.WriteLine("║   4. 🚪 THOÁT                                   ║");
+                Console.WriteLine("║   4. 🔄 TẠO GUID MỚI                            ║");
+                Console.WriteLine("║   5. 🚪 THOÁT                                   ║");
                 Console.WriteLine("║                                                  ║");
                 Console.WriteLine("╚══════════════════════════════════════════════════╝");
-                Console.Write("\nChọn tùy chọn [1-4]: ");
+                Console.Write("\nChọn tùy chọn [1-5]: ");
 
                 var key = Console.ReadKey();
                 Console.WriteLine();
@@ -92,6 +92,9 @@ namespace SimpleBIM.Installer
                         ShowInstallInfo();
                         break;
                     case '4':
+                        RegenerateGuid();
+                        break;
+                    case '5':
                         Environment.Exit(0);
                         break;
                     default:
@@ -107,30 +110,28 @@ namespace SimpleBIM.Installer
             try
             {
                 if (!silentMode) Console.Clear();
-                Console.WriteLine("🔄 Đang cài đặt SimpleBIM AS Tab...\n");
+                Console.WriteLine("🔄 Đang cài đặt SimpleBIM...\n");
 
                 // Lấy đường dẫn thư mục hiện tại (nơi chứa installer)
                 string currentDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-                string addinSource = Path.Combine(currentDir, "SimpleBIM.AS.tab.addin");
-                string dllSource = Path.Combine(currentDir, "SimpleBIM.AS.tab.dll");
+                string addinSource = Path.Combine(currentDir, "SimpleBIM.addin");
+                string dllSource = Path.Combine(currentDir, "SimpleBIM.dll");
 
-                // === THÊM PHẦN NÀY: TẠO FILE .ADDIN NẾU CHƯA CÓ ===
+                // Tạo file .addin nếu chưa có hoặc cần tạo mới
                 if (!System.IO.File.Exists(addinSource))
                 {
-                    Console.WriteLine("📝 Tự động tạo file cấu hình add-in...");
-                    CreateInitialAddinFile(addinSource);
+                    Console.WriteLine("📝 Tự động tạo file cấu hình add-in với GUID mới...");
+                    CreateInitialAddinFile(addinSource, true);
                     Console.WriteLine($"✓ Đã tạo file: {addinSource}");
                 }
 
                 // Kiểm tra file tồn tại
-                if (!System.IO.File.Exists(addinSource) || !System.IO.File.Exists(dllSource))
+                if (!System.IO.File.Exists(dllSource))
                 {
                     Console.ForegroundColor = ConsoleColor.Red;
-                    Console.WriteLine("❌ KHÔNG TÌM THẤY FILE ADD-IN!");
+                    Console.WriteLine("❌ KHÔNG TÌM THẤY FILE SimpleBIM.dll!");
                     Console.ResetColor();
-                    Console.WriteLine("\nVui lòng đặt các file sau cùng thư mục với installer:");
-                    Console.WriteLine("✓ SimpleBIM.AS.tab.addin");
-                    Console.WriteLine("✓ SimpleBIM.AS.tab.dll");
+                    Console.WriteLine("\nVui lòng đặt SimpleBIM.dll cùng thư mục với installer.");
 
                     if (!silentMode) Pause();
                     return;
@@ -147,7 +148,7 @@ namespace SimpleBIM.Installer
                 Console.WriteLine($"✓ Tạo thư mục chung: {commonPath}");
 
                 // Copy DLL
-                string dllDest = Path.Combine(commonPath, "SimpleBIM.AS.tab.dll");
+                string dllDest = Path.Combine(commonPath, "SimpleBIM.dll");
                 System.IO.File.Copy(dllSource, dllDest, true);
                 Console.WriteLine($"✓ Sao chép DLL: {dllDest}");
 
@@ -178,9 +179,8 @@ namespace SimpleBIM.Installer
                 Console.ResetColor();
                 Console.WriteLine($"\n• Đã cài đặt cho {installedCount} phiên bản Revit");
                 Console.WriteLine("• Khởi động lại Revit để sử dụng add-in");
-                Console.WriteLine("• Shortcut gỡ cài đặt đã được tạo trên Desktop");
 
-                // Ghi registry để hỗ trợ gỡ cài đặt qua Control Panel
+                // Ghi registry
                 WriteRegistryInfo(currentDir);
             }
             catch (Exception ex)
@@ -193,46 +193,88 @@ namespace SimpleBIM.Installer
 
             if (!silentMode) Pause();
         }
-        static void CreateInitialAddinFile(string filePath)
+
+        static void RegenerateGuid()
         {
-            // Lấy GUID từ DLL hoặc dùng mặc định
-            string guid = ExtractGuidFromDll() ?? "{12345678-1234-1234-1234-123456789ABC}";
+            Console.Clear();
+            Console.WriteLine("╔══════════════════════════════════════════════════╗");
+            Console.WriteLine("║            TẠO GUID MỚI                          ║");
+            Console.WriteLine("╚══════════════════════════════════════════════════╝\n");
+
+            try
+            {
+                string currentDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+                string addinSource = Path.Combine(currentDir, "SimpleBIM.addin");
+
+                // Xóa file .addin cũ nếu có
+                if (System.IO.File.Exists(addinSource))
+                {
+                    Console.WriteLine("🗑️  Xóa file .addin cũ...");
+                    System.IO.File.Delete(addinSource);
+                }
+
+                // Xóa các file .addin đã cài đặt trong Revit
+                Console.WriteLine("🔄 Xóa các file .addin cũ từ Revit...");
+                foreach (string version in RevitVersions)
+                {
+                    string addinPath = Path.Combine(
+                        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                        "Autodesk",
+                        "Revit",
+                        "Addins",
+                        version,
+                        "SimpleBIM.addin"
+                    );
+
+                    if (System.IO.File.Exists(addinPath))
+                    {
+                        System.IO.File.Delete(addinPath);
+                        Console.WriteLine($"   ✓ Đã xóa: Revit {version}");
+                    }
+                }
+
+                // Tạo file mới với GUID mới
+                Console.WriteLine("\n✨ Tạo file .addin mới với GUID mới...");
+                CreateInitialAddinFile(addinSource, true);
+
+                string newGuid = GetAddinGuid();
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine($"\n✅ ĐÃ TẠO GUID MỚI THÀNH CÔNG!");
+                Console.ResetColor();
+                Console.WriteLine($"\nGUID mới: {newGuid}");
+                Console.WriteLine($"File mới: {addinSource}");
+                Console.WriteLine("\n⚠️  Vui lòng CÀI ĐẶT LẠI add-in (chọn option 1)");
+            }
+            catch (Exception ex)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"\n❌ LỖI: {ex.Message}");
+                Console.ResetColor();
+            }
+
+            Pause();
+        }
+
+        static void CreateInitialAddinFile(string filePath, bool forceNewGuid = false)
+        {
+            // Tạo GUID hoàn toàn mới
+            string guid = "{" + Guid.NewGuid().ToString().ToUpper() + "}";
 
             string content = $@"<?xml version=""1.0"" encoding=""utf-8"" standalone=""no""?>
-            <RevitAddIns>
-              <AddIn Type=""Application"">
-                <Name>SimpleBIM AS Tab</Name>
-                <Assembly>REPLACE_WITH_INSTALL_PATH</Assembly>
-                <AddInId>{guid}</AddInId>
-                <FullClassName>SimpleBIM.AS.tab.App</FullClassName>
-                <VendorId>SIMPLEBIM</VendorId>
-                <VendorDescription>SimpleBIM Add-in for Revit</VendorDescription>
-              </AddIn>
-            </RevitAddIns>";
+<RevitAddIns>
+  <AddIn Type=""Application"">
+    <Name>SimpleBIM</Name>
+    <Assembly>REPLACE_WITH_INSTALL_PATH</Assembly>
+    <AddInId>{guid}</AddInId>
+    <FullClassName>SimpleBIM.App</FullClassName>
+    <VendorId>SIMPLEBIM</VendorId>
+    <VendorDescription>SimpleBIM Add-in for Revit</VendorDescription>
+  </AddIn>
+</RevitAddIns>";
 
             System.IO.File.WriteAllText(filePath, content, System.Text.Encoding.UTF8);
         }
 
-        static string ExtractGuidFromDll()
-        {
-            try
-            {
-                string currentDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-                string dllPath = Path.Combine(currentDir, "SimpleBIM.AS.tab.dll");
-
-                if (System.IO.File.Exists(dllPath))
-                {
-                    var assembly = Assembly.LoadFrom(dllPath);
-                    var guidAttr = assembly.GetCustomAttribute<System.Runtime.InteropServices.GuidAttribute>();
-                    if (guidAttr?.Value != null)
-                    {
-                        return "{" + guidAttr.Value.ToUpper() + "}";
-                    }
-                }
-            }
-            catch { }
-            return null;
-        }
         static void InstallSilent()
         {
             try
@@ -249,7 +291,7 @@ namespace SimpleBIM.Installer
         static string GetAddinGuid()
         {
             string currentDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            string addinFilePath = Path.Combine(currentDir, "SimpleBIM.AS.tab.addin");
+            string addinFilePath = Path.Combine(currentDir, "SimpleBIM.addin");
 
             if (System.IO.File.Exists(addinFilePath))
             {
@@ -270,25 +312,26 @@ namespace SimpleBIM.Installer
                 catch { }
             }
 
-            // Fallback: GUID mặc định
-            return "{12345678-1234-1234-1234-123456789ABC}";
+            // Tạo GUID mới nếu không tìm thấy
+            return "{" + Guid.NewGuid().ToString().ToUpper() + "}";
         }
+
         static void CreateAddinFile(string targetFolder, string dllPath)
         {
-            string addinPath = Path.Combine(targetFolder, "SimpleBIM.AS.tab.addin");
+            string addinPath = Path.Combine(targetFolder, "SimpleBIM.addin");
             string guidString = GetAddinGuid();
-            // Đọc nội dung file .addin gốc
-            string addinContent = @"<?xml version=""1.0"" encoding=""utf-8"" standalone=""no""?>
-            <RevitAddIns>
-              <AddIn Type=""Application"">
-                <Name>SimpleBIM AS Tab</Name>
-                <Assembly>" + dllPath.Replace("\\", "\\\\") + @"</Assembly>
-                <AddInId>" + guidString + @"</AddInId>
-                <FullClassName>SimpleBIM.AS.tab.App</FullClassName>
-                <VendorId>SIMPLEBIM</VendorId>
-                <VendorDescription>SimpleBIM Add-in for Revit</VendorDescription>
-              </AddIn>
-            </RevitAddIns>";
+
+            string addinContent = $@"<?xml version=""1.0"" encoding=""utf-8"" standalone=""no""?>
+<RevitAddIns>
+  <AddIn Type=""Application"">
+    <Name>SimpleBIM</Name>
+    <Assembly>{dllPath}</Assembly>
+    <AddInId>{guidString}</AddInId>
+    <FullClassName>SimpleBIM.App</FullClassName>
+    <VendorId>SIMPLEBIM</VendorId>
+    <VendorDescription>SimpleBIM Add-in for Revit</VendorDescription>
+  </AddIn>
+</RevitAddIns>";
 
             System.IO.File.WriteAllText(addinPath, addinContent, System.Text.Encoding.UTF8);
         }
@@ -298,7 +341,7 @@ namespace SimpleBIM.Installer
             try
             {
                 if (!silentMode) Console.Clear();
-                Console.WriteLine("🔄 Đang gỡ cài đặt SimpleBIM AS Tab...\n");
+                Console.WriteLine("🔄 Đang gỡ cài đặt SimpleBIM...\n");
 
                 int removedCount = 0;
 
@@ -311,7 +354,7 @@ namespace SimpleBIM.Installer
                         "Revit",
                         "Addins",
                         version,
-                        "SimpleBIM.AS.tab.addin"
+                        "SimpleBIM.addin"
                     );
 
                     if (System.IO.File.Exists(addinPath))
@@ -333,7 +376,8 @@ namespace SimpleBIM.Installer
                     Directory.Delete(commonPath, true);
                     Console.WriteLine($"✓ Đã xóa thư mục: {commonPath}");
                 }
-                // 3. XÓA HOÀN TOÀN LICENSE CŨ (đây là phần bạn cần!)
+
+                // Xóa license cũ
                 string licenseFolder = Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
                     "SimpleBIM"
@@ -343,13 +387,23 @@ namespace SimpleBIM.Installer
                     try
                     {
                         Directory.Delete(licenseFolder, true);
-                        Console.WriteLine($"Đã xóa dữ liệu license cũ: {licenseFolder}");
+                        Console.WriteLine($"✓ Đã xóa dữ liệu license: {licenseFolder}");
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"Không thể xóa license folder (có thể đang dùng): {ex.Message}");
+                        Console.WriteLine($"⚠️  Không thể xóa license folder: {ex.Message}");
                     }
                 }
+
+                // Xóa file .addin trong thư mục installer
+                string currentDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+                string addinSource = Path.Combine(currentDir, "SimpleBIM.addin");
+                if (System.IO.File.Exists(addinSource))
+                {
+                    System.IO.File.Delete(addinSource);
+                    Console.WriteLine("✓ Đã xóa file .addin trong thư mục installer");
+                }
+
                 // Xóa shortcut
                 string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
                 string shortcutPath = Path.Combine(desktopPath, "Uninstall SimpleBIM.lnk");
@@ -369,6 +423,7 @@ namespace SimpleBIM.Installer
                 Console.ResetColor();
                 Console.WriteLine($"\n• Đã xóa từ {removedCount} phiên bản Revit");
                 Console.WriteLine("• Add-in đã được gỡ hoàn toàn");
+                Console.WriteLine("• File .addin cũ đã được xóa");
             }
             catch (Exception ex)
             {
@@ -387,12 +442,17 @@ namespace SimpleBIM.Installer
             Console.WriteLine("║            THÔNG TIN CÀI ĐẶT                     ║");
             Console.WriteLine("╠══════════════════════════════════════════════════╣\n");
 
+            // Hiển thị GUID hiện tại
+            string currentGuid = GetAddinGuid();
+            Console.WriteLine("🔑 GUID hiện tại:");
+            Console.WriteLine($"   {currentGuid}\n");
+
             Console.WriteLine("📂 Vị trí file DLL:");
             string commonPath = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
                 CompanyName,
                 "Revit Addins",
-                "SimpleBIM.AS.tab.dll"
+                "SimpleBIM.dll"
             );
             Console.WriteLine($"   {commonPath}");
             Console.WriteLine($"   Tồn tại: {(System.IO.File.Exists(commonPath) ? "✓ CÓ" : "✗ KHÔNG")}");
@@ -407,7 +467,7 @@ namespace SimpleBIM.Installer
                     "Revit",
                     "Addins",
                     version,
-                    "SimpleBIM.AS.tab.addin"
+                    "SimpleBIM.addin"
                 );
 
                 if (System.IO.File.Exists(addinPath))
@@ -431,11 +491,12 @@ namespace SimpleBIM.Installer
             try
             {
                 Microsoft.Win32.RegistryKey key = Microsoft.Win32.Registry.CurrentUser.CreateSubKey(
-                    @"Software\SimpleBIM\AS Tab"
+                    @"Software\SimpleBIM\"
                 );
                 key.SetValue("InstallPath", installPath);
                 key.SetValue("InstallDate", DateTime.Now.ToString("yyyy-MM-dd"));
                 key.SetValue("Version", "1.0.0");
+                key.SetValue("GUID", GetAddinGuid());
                 key.Close();
             }
             catch { }
