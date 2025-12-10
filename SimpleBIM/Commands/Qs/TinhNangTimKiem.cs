@@ -16,7 +16,7 @@ using System.Data;
 using WinForms = System.Windows.Forms;
 using GDI = System.Drawing;
 
-namespace RevitMarkAssignmentTool
+namespace SimpleBIM.Commands.Qs
 {
     /// <summary>
     /// PyRevit Tool - Gan Ma Dinh Muc v5.0 + v6.0 HYBRID + LEVEL 3 (UPGRADED)
@@ -33,7 +33,7 @@ namespace RevitMarkAssignmentTool
     /// </summary>
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
-    public class MarkAssignmentCommand : IExternalCommand
+    public class TinhNangTimKiem : IExternalCommand
     {
         private static UIApplication _uiapp;
         private static Document _doc;
@@ -86,11 +86,11 @@ namespace RevitMarkAssignmentTool
                 Console.WriteLine("This will enable <15ms search performance...");
 
                 Console.WriteLine("\n[STEP 4] Loading categories from project...");
-                Dictionary<string, CategoryInfo> categoriesDict = GetAllCategoriesFromProject();
+                Dictionary<string, TinhNangTimKiemCategoryInfo> categoriesDict = GetAllCategoriesFromProject();
                 Console.WriteLine($"Found {categoriesDict.Count} categories");
 
                 Console.WriteLine("\n[STEP 5] Creating form with LEVEL 3 integrated...");
-                using (MarkAssignmentForm form = new MarkAssignmentForm(csvData, categoriesDict))
+                using (TinhNangTimKiemMarkAssignmentForm form = new TinhNangTimKiemMarkAssignmentForm(csvData, categoriesDict))
                 {
                     Console.WriteLine("✅ Form created successfully - LEVEL 3 UPGRADED Active!");
 
@@ -244,9 +244,9 @@ namespace RevitMarkAssignmentTool
             return result.ToArray();
         }
 
-        private static Dictionary<string, CategoryInfo> GetAllCategoriesFromProject()
+        private static Dictionary<string, TinhNangTimKiemCategoryInfo> GetAllCategoriesFromProject()
         {
-            Dictionary<string, CategoryInfo> categoriesDict = new Dictionary<string, CategoryInfo>();
+            Dictionary<string, TinhNangTimKiemCategoryInfo> categoriesDict = new Dictionary<string, TinhNangTimKiemCategoryInfo>();
             HashSet<string> tempCategories = new HashSet<string>();
 
             FilteredElementCollector collector = new FilteredElementCollector(_doc).WhereElementIsNotElementType();
@@ -273,7 +273,7 @@ namespace RevitMarkAssignmentTool
 
                         if (elements.Count > 0)
                         {
-                            categoriesDict[categoryName] = new CategoryInfo
+                            categoriesDict[categoryName] = new TinhNangTimKiemCategoryInfo
                             {
                                 Type = catType,
                                 Count = elements.Count,
@@ -390,34 +390,34 @@ namespace RevitMarkAssignmentTool
     // PARAMETER DEFINITIONS
     // =============================================================================
 
-    public class ParameterDefinitionInfo
+    public class TinhNangTimKiemParameterDefinitionInfo
     {
         public string Name { get; set; }
         public object ParameterType { get; set; }
         public string Description { get; set; }
     }
 
-    public static class ParameterDefinitions
+    public static class TinhNangTimKiemParameterDefinitions
     {
-        public static List<ParameterDefinitionInfo> GetDefinitions()
+        public static List<TinhNangTimKiemParameterDefinitionInfo> GetDefinitions()
         {
-            if (MarkAssignmentCommand.RevitVersion >= 2021)
+            if (TinhNangTimKiem.RevitVersion >= 2021)
             {
-                return new List<ParameterDefinitionInfo>
+                return new List<TinhNangTimKiemParameterDefinitionInfo>
                 {
-                    new ParameterDefinitionInfo { Name = "Mã hiệu", ParameterType = SpecTypeId.String.Text, Description = "Ma hieu" },
-                    new ParameterDefinitionInfo { Name = "Tên công việc", ParameterType = SpecTypeId.String.Text, Description = "Ten cong viec" },
-                    new ParameterDefinitionInfo { Name = "Đơn vị", ParameterType = SpecTypeId.String.Text, Description = "Don vi tinh" }
+                    new TinhNangTimKiemParameterDefinitionInfo { Name = "Mã hiệu", ParameterType = SpecTypeId.String.Text, Description = "Ma hieu" },
+                    new TinhNangTimKiemParameterDefinitionInfo { Name = "Tên công việc", ParameterType = SpecTypeId.String.Text, Description = "Ten cong viec" },
+                    new TinhNangTimKiemParameterDefinitionInfo { Name = "Đơn vị", ParameterType = SpecTypeId.String.Text, Description = "Don vi tinh" }
                 };
             }
             else
             {
 #pragma warning disable CS0618
-                return new List<ParameterDefinitionInfo>
+                return new List<TinhNangTimKiemParameterDefinitionInfo>
                 {
-                    new ParameterDefinitionInfo { Name = "Mã hiệu", ParameterType = null, Description = "Ma hieu" },
-                    new ParameterDefinitionInfo { Name = "Tên công việc", ParameterType = null, Description = "Ten cong viec" },
-                    new ParameterDefinitionInfo { Name = "Đơn vị", ParameterType = null, Description = "Don vi tinh" }
+                    new TinhNangTimKiemParameterDefinitionInfo { Name = "Mã hiệu", ParameterType = null, Description = "Ma hieu" },
+                    new TinhNangTimKiemParameterDefinitionInfo { Name = "Tên công việc", ParameterType = null, Description = "Ten cong viec" },
+                    new TinhNangTimKiemParameterDefinitionInfo { Name = "Đơn vị", ParameterType = null, Description = "Don vi tinh" }
                 };
 #pragma warning restore CS0618
             }
@@ -428,7 +428,7 @@ namespace RevitMarkAssignmentTool
     // CATEGORY MAPPING & MATCH STRATEGY
     // =============================================================================
 
-    public static class CategoryMapping
+    public static class TinhNangTimKiemCategoryMapping
     {
         public static Dictionary<string, string> Mapping = new Dictionary<string, string>
         {
@@ -1279,14 +1279,14 @@ namespace RevitMarkAssignmentTool
     // HELPER CLASSES
     // =============================================================================
 
-    public class CategoryInfo
+    public class TinhNangTimKiemCategoryInfo
     {
         public string Type { get; set; }
         public int Count { get; set; }
         public bool HasParams { get; set; }
     }
 
-    public class ElementWrapper
+    public class TinhNangTimKiemElementWrapper
     {
         public Element Element { get; set; }
         public int ElementId { get; set; }
@@ -1301,7 +1301,7 @@ namespace RevitMarkAssignmentTool
         public string WidthValue { get; set; }
         public string HeightValue { get; set; }
 
-        public ElementWrapper(Element element)
+        public TinhNangTimKiemElementWrapper(Element element)
         {
             Element = element;
             ElementId = element.Id.IntegerValue;
@@ -1437,12 +1437,12 @@ namespace RevitMarkAssignmentTool
     // MAIN FORM CLASS - LEVEL 3 UPGRADED
     // =============================================================================
 
-    public partial class MarkAssignmentForm : System.Windows.Forms.Form
+    public partial class TinhNangTimKiemMarkAssignmentForm : System.Windows.Forms.Form
     {
         private List<Dictionary<string, string>> _allCsvData;
         private List<Dictionary<string, string>> _displayedCsvData;
         private AdvancedCSVSearcherL3 _csvSearcher;
-        private Dictionary<string, CategoryInfo> _categoriesDict;
+        private Dictionary<string, TinhNangTimKiemCategoryInfo> _categoriesDict;
         private List<Element> _currentElements;
         private string _currentCategory;
         private string _currentProperty;
@@ -1469,7 +1469,7 @@ namespace RevitMarkAssignmentTool
         public Dictionary<int, Dictionary<string, string>> Mapping => _mapping;
         public AdvancedCSVSearcherL3 CsvSearcher => _csvSearcher;
 
-        public MarkAssignmentForm(List<Dictionary<string, string>> csvData, Dictionary<string, CategoryInfo> categoriesDict)
+        public TinhNangTimKiemMarkAssignmentForm(List<Dictionary<string, string>> csvData, Dictionary<string, TinhNangTimKiemCategoryInfo> categoriesDict)
         {
             Text = "TOOL GÁN MÃ ĐỊNH MỨC - LEVEL 3 UPGRADED (N-gram + Fuzzy + Jaro-Winkler)";
             Width = 1650;
@@ -2071,7 +2071,7 @@ Hướng dẫn:
 
             foreach (Element elem in _currentElements)
             {
-                ElementWrapper wrapper = new ElementWrapper(elem);
+                TinhNangTimKiemElementWrapper wrapper = new TinhNangTimKiemElementWrapper(elem);
                 int rowIndex = _elementsGrid.Rows.Add();
                 _elementsGrid.Rows[rowIndex].Cells[0].Value = false;
                 _elementsGrid.Rows[rowIndex].Cells[1].Value = wrapper.MaHieuValue;
@@ -2112,7 +2112,7 @@ Hướng dẫn:
                 return;
             }
 
-            Transaction t = new Transaction(MarkAssignmentCommand.Doc, "Assign Parameters with LEVEL 3");
+            Transaction t = new Transaction(TinhNangTimKiem.Doc, "Assign Parameters with LEVEL 3");
             t.Start();
 
             int successCount = 0;
@@ -2244,14 +2244,14 @@ Hướng dẫn:
 
                 if (builtinCat.HasValue)
                 {
-                    FilteredElementCollector collector = new FilteredElementCollector(MarkAssignmentCommand.Doc)
+                    FilteredElementCollector collector = new FilteredElementCollector(TinhNangTimKiem.Doc)
                         .OfCategory(builtinCat.Value)
                         .WhereElementIsNotElementType();
                     elements = collector.ToList();
                 }
                 else
                 {
-                    FilteredElementCollector collector = new FilteredElementCollector(MarkAssignmentCommand.Doc)
+                    FilteredElementCollector collector = new FilteredElementCollector(TinhNangTimKiem.Doc)
                         .WhereElementIsNotElementType();
 
                     foreach (Element elem in collector)

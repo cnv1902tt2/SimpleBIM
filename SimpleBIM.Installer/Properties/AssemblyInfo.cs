@@ -5,12 +5,12 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("SimpleBIM.Installer")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyTitle("SimpleBIM Installer")]
+[assembly: AssemblyDescription("SimpleBIM Installer - Revit Add-in Installation Tool")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("SimpleBIM.Installer")]
-[assembly: AssemblyCopyright("Copyright ©  2025")]
+[assembly: AssemblyCompany("Phan Huy Thiện - +84915898877")]
+[assembly: AssemblyProduct("SimpleBIM")]
+[assembly: AssemblyCopyright("Copyright © Phan Huy Thiện 2025")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -29,5 +29,6 @@ using System.Runtime.InteropServices;
 //      Build Number
 //      Revision
 //
+// ✅ Sync với SimpleBIM.dll version
 [assembly: AssemblyVersion("1.0.0.0")]
 [assembly: AssemblyFileVersion("1.0.0.0")]

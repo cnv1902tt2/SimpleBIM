@@ -15,6 +15,11 @@ using Drawing = System.Drawing;
 
 namespace SimpleBIM.Commands.As
 {
+    /// <summary>
+    /// BATCH INTEGRATED ROOF TOOL - CREATE MULTIPLE ROOFS
+    /// Tạo hàng loạt Roof từ nhiều mặt nghiêng với Smart Offset
+    /// 100% Python Equivalent Version
+    /// </summary>
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
     public class FinishRoof : IExternalCommand
@@ -55,21 +60,31 @@ namespace SimpleBIM.Commands.As
 
         private void ShowMessage(string message, string title = "Notification")
         {
-            WinForms.MessageBox.Show(message, title, WinForms.MessageBoxButtons.OK, WinForms.MessageBoxIcon.Information);
+            WinForms.MessageBox.Show(message, title,
+                WinForms.MessageBoxButtons.OK,
+                WinForms.MessageBoxIcon.Information);
         }
 
         private void ShowError(string message, string title = "Error")
         {
-            WinForms.MessageBox.Show(message, title, WinForms.MessageBoxButtons.OK, WinForms.MessageBoxIcon.Error);
+            WinForms.MessageBox.Show(message, title,
+                WinForms.MessageBoxButtons.OK,
+                WinForms.MessageBoxIcon.Error);
+        }
+
+        private void ShowWarning(string message, string title = "Warning")
+        {
+            WinForms.MessageBox.Show(message, title,
+                WinForms.MessageBoxButtons.OK,
+                WinForms.MessageBoxIcon.Warning);
         }
 
         // ============================================================================
-        // THICKNESS EXTRACTION (4 METHODS)
+        // THICKNESS EXTRACTION (4 METHODS) - PYTHON EQUIVALENT
         // ============================================================================
 
         private double GetRoofTypeThickness(RoofType roofType)
         {
-            // Extract roof type thickness using 4 fallback methods
             try
             {
                 // Method 1: Compound Structure
@@ -78,18 +93,15 @@ namespace SimpleBIM.Commands.As
                     CompoundStructure compound = roofType.GetCompoundStructure();
                     if (compound != null)
                     {
-                        // PYREVIT → C# CONVERSION: GetTotalThickness() → GetWidth()
-                        double thickness = compound.GetWidth(); // CONVERSION APPLIED
+                        // Revit 2020+: GetWidth() thay cho GetTotalThickness()
+                        double thickness = compound.GetWidth();
                         if (thickness > 0)
                         {
                             return thickness;
                         }
                     }
                 }
-                catch
-                {
-                    // Continue to next method
-                }
+                catch { }
 
                 // Method 2: Thickness Parameter
                 try
@@ -100,10 +112,7 @@ namespace SimpleBIM.Commands.As
                         return param.AsDouble();
                     }
                 }
-                catch
-                {
-                    // Continue to next method
-                }
+                catch { }
 
                 // Method 3: Search All Parameters
                 try
@@ -127,16 +136,10 @@ namespace SimpleBIM.Commands.As
                                 }
                             }
                         }
-                        catch
-                        {
-                            continue;
-                        }
+                        catch { continue; }
                     }
                 }
-                catch
-                {
-                    // Continue to next method
-                }
+                catch { }
 
                 // Method 4: Sum Layer Thicknesses
                 try
@@ -149,13 +152,10 @@ namespace SimpleBIM.Commands.As
                         {
                             try
                             {
-                                // PYREVIT → C# CONVERSION: GetLayerThickness(i) → GetLayerWidth(i)
-                                total += compound.GetLayerWidth(i); // CONVERSION APPLIED
+                                // Revit 2020+: GetLayerWidth() thay cho GetLayerThickness()
+                                total += compound.GetLayerWidth(i);
                             }
-                            catch
-                            {
-                                continue;
-                            }
+                            catch { continue; }
                         }
                         if (total > 0)
                         {
@@ -163,10 +163,7 @@ namespace SimpleBIM.Commands.As
                         }
                     }
                 }
-                catch
-                {
-                    // Return 0 if all methods fail
-                }
+                catch { }
 
                 return 0;
             }
@@ -177,59 +174,22 @@ namespace SimpleBIM.Commands.As
         }
 
         // ============================================================================
-        // FACE ANALYSIS
+        // FACE ANALYSIS - PYTHON EQUIVALENT
         // ============================================================================
-
-        private class FaceData
-        {
-            public Element Element { get; set; }
-            public Face Face { get; set; }
-            public Reference Reference { get; set; }
-        }
-
-        private FaceData PickSingleFace()
-        {
-            // Pick a single face from 3D view
-            try
-            {
-                Reference reference = _uidoc.Selection.PickObject(ObjectType.Face, "Select sloped face");
-                if (reference != null)
-                {
-                    Element element = _doc.GetElement(reference.ElementId);
-                    GeometryObject geometryObject = element.GetGeometryObjectFromReference(reference);
-                    if (geometryObject is Face face)
-                    {
-                        return new FaceData
-                        {
-                            Element = element,
-                            Face = face,
-                            Reference = reference
-                        };
-                    }
-                }
-                return null;
-            }
-            catch (Autodesk.Revit.Exceptions.OperationCanceledException)
-            {
-                return null;
-            }
-            catch
-            {
-                return null;
-            }
-        }
 
         private bool IsFaceSloped(Face face)
         {
-            // Check if face is sloped (not horizontal)
             try
             {
                 BoundingBoxUV bbox = face.GetBoundingBox();
                 if (bbox != null)
                 {
-                    UV centerUV = new UV((bbox.Min.U + bbox.Max.U) / 2.0, (bbox.Min.V + bbox.Max.V) / 2.0);
+                    UV centerUV = new UV(
+                        (bbox.Min.U + bbox.Max.U) / 2.0,
+                        (bbox.Min.V + bbox.Max.V) / 2.0
+                    );
                     XYZ normal = face.ComputeNormal(centerUV);
-                    double angleTolerance = Math.Cos(Math.PI / 36.0); // 5 degrees in radians
+                    double angleTolerance = Math.Cos(Math.PI / 36.0); // 5 degrees
                     return Math.Abs(normal.Z) <= angleTolerance;
                 }
                 return false;
@@ -242,24 +202,23 @@ namespace SimpleBIM.Commands.As
 
         private int GetFaceNormalDirection(Face face)
         {
-            // Determine if face is TOP (1), BOTTOM (-1), or UNKNOWN (0)
+            // Return: 1 = TOP, -1 = BOTTOM, 0 = UNKNOWN
             try
             {
                 BoundingBoxUV bbox = face.GetBoundingBox();
                 if (bbox != null)
                 {
-                    UV centerUV = new UV((bbox.Min.U + bbox.Max.U) / 2.0, (bbox.Min.V + bbox.Max.V) / 2.0);
+                    UV centerUV = new UV(
+                        (bbox.Min.U + bbox.Max.U) / 2.0,
+                        (bbox.Min.V + bbox.Max.V) / 2.0
+                    );
                     XYZ normal = face.ComputeNormal(centerUV);
                     if (normal.Z > 0.5)
-                    {
-                        return 1;
-                    }
+                        return 1;  // TOP
                     else if (normal.Z < -0.5)
-                    {
-                        return -1;
-                    }
+                        return -1; // BOTTOM
                 }
-                return 0;
+                return 0; // UNKNOWN
             }
             catch
             {
@@ -269,13 +228,15 @@ namespace SimpleBIM.Commands.As
 
         private double? GetSlopeFromFaceNormal(Face face)
         {
-            // Calculate slope angle from face normal
             try
             {
                 BoundingBoxUV bbox = face.GetBoundingBox();
                 if (bbox != null)
                 {
-                    UV centerUV = new UV((bbox.Min.U + bbox.Max.U) / 2.0, (bbox.Min.V + bbox.Max.V) / 2.0);
+                    UV centerUV = new UV(
+                        (bbox.Min.U + bbox.Max.U) / 2.0,
+                        (bbox.Min.V + bbox.Max.V) / 2.0
+                    );
                     XYZ normal = face.ComputeNormal(centerUV);
                     double nzAbs = Math.Abs(Math.Max(-1.0, Math.Min(1.0, normal.Z)));
                     double angleRad = Math.Acos(nzAbs);
@@ -295,7 +256,7 @@ namespace SimpleBIM.Commands.As
         }
 
         // ============================================================================
-        // POINT EXTRACTION & PROCESSING
+        // POINT EXTRACTION & PROCESSING - PYTHON EQUIVALENT WITH TRANSFORM
         // ============================================================================
 
         private List<XYZ> ExtractAllFacePoints(Face face, Element element)
@@ -304,6 +265,7 @@ namespace SimpleBIM.Commands.As
             {
                 List<XYZ> allPoints = new List<XYZ>();
 
+                // Extract all points from edge loops
                 foreach (EdgeArray edgeLoop in face.EdgeLoops)
                 {
                     foreach (Edge edge in edgeLoop)
@@ -317,7 +279,54 @@ namespace SimpleBIM.Commands.As
                     }
                 }
 
-                return allPoints; // Không cần transform
+                // *** CRITICAL FIX: Apply transform like Python version ***
+                List<XYZ> originalPoints = new List<XYZ>();
+                try
+                {
+                    Transform transform = null;
+
+                    // Try to get transform from different element types
+                    if (element is FamilyInstance familyInstance)
+                    {
+                        transform = familyInstance.GetTransform();
+                    }
+                    else if (element.Location is LocationPoint locationPoint)
+                    {
+                        transform = locationPoint.Rotation != null
+                            ? Transform.CreateRotation(XYZ.BasisZ, locationPoint.Rotation)
+                            : Transform.Identity;
+                    }
+                    else if (element.Location is LocationCurve locationCurve)
+                    {
+                        // For elements with LocationCurve, typically no rotation needed
+                        transform = Transform.Identity;
+                    }
+                    else
+                    {
+                        // Default to Identity transform
+                        transform = Transform.Identity;
+                    }
+
+                    // Apply transform if it's not identity
+                    if (transform != null && !transform.IsIdentity)
+                    {
+                        foreach (XYZ pt in allPoints)
+                        {
+                            originalPoints.Add(transform.OfPoint(pt));
+                        }
+                    }
+                    else
+                    {
+                        originalPoints = allPoints;
+                    }
+                }
+                catch
+                {
+                    // If transform fails, use original points
+                    originalPoints = allPoints;
+                }
+
+                return originalPoints;
             }
             catch
             {
@@ -327,7 +336,6 @@ namespace SimpleBIM.Commands.As
 
         private List<XYZ> CleanupDuplicatePoints(List<XYZ> points)
         {
-            // Remove duplicate points and sort them
             if (points == null || points.Count == 0)
                 return new List<XYZ>();
 
@@ -355,6 +363,7 @@ namespace SimpleBIM.Commands.As
                 }
             }
 
+            // Sort points if 4 corners (like Python)
             if (uniquePoints.Count == 4)
             {
                 double centerX = uniquePoints.Sum(pt => pt.X) / uniquePoints.Count;
@@ -372,54 +381,126 @@ namespace SimpleBIM.Commands.As
         }
 
         // ============================================================================
-        // ROOF CREATION
+        // LEVEL EXTRACTION - PYTHON EQUIVALENT (5 METHODS)
         // ============================================================================
 
         private (Level level, bool success, string message) GetLevelFromElement(Element element)
         {
-            // Get level from element (wall, floor, roof, etc.)
             try
             {
-                // Check LevelId property
-                if (element.LevelId != null && element.LevelId != ElementId.InvalidElementId)
+                // Method 1: Direct LevelId
+                try
                 {
-                    Level level = _doc.GetElement(element.LevelId) as Level;
-                    if (level != null)
+                    if (element.LevelId != null &&
+                        element.LevelId != ElementId.InvalidElementId)
                     {
-                        return (level, true, $"Using element level: {level.Name}");
-                    }
-                }
-
-                // Check Level parameter
-                Parameter levelParam = element.LookupParameter("Level");
-                if (levelParam != null && levelParam.HasValue)
-                {
-                    ElementId levelId = levelParam.AsElementId();
-                    if (levelId != null && levelId != ElementId.InvalidElementId)
-                    {
-                        Level level = _doc.GetElement(levelId) as Level;
+                        Level level = _doc.GetElement(element.LevelId) as Level;
                         if (level != null)
                         {
-                            return (level, true, $"Using element level: {level.Name}");
+                            return (level, true, $"Using element LevelId: {level.Name}");
                         }
                     }
                 }
+                catch { }
 
-                return (null, false, "Cannot find level from element!");
+                // Method 2: Level parameter
+                try
+                {
+                    Parameter levelParam = element.LookupParameter("Level");
+                    if (levelParam != null && levelParam.HasValue)
+                    {
+                        ElementId levelId = levelParam.AsElementId();
+                        if (levelId != null && levelId != ElementId.InvalidElementId)
+                        {
+                            Level level = _doc.GetElement(levelId) as Level;
+                            if (level != null)
+                            {
+                                return (level, true, $"Using Level parameter: {level.Name}");
+                            }
+                        }
+                    }
+                }
+                catch { }
+
+                // Method 3: Base Level parameter
+                try
+                {
+                    Parameter baseLevelParam = element.LookupParameter("Base Level");
+                    if (baseLevelParam != null && baseLevelParam.HasValue)
+                    {
+                        ElementId levelId = baseLevelParam.AsElementId();
+                        if (levelId != null && levelId != ElementId.InvalidElementId)
+                        {
+                            Level level = _doc.GetElement(levelId) as Level;
+                            if (level != null)
+                            {
+                                return (level, true, $"Using Base Level parameter: {level.Name}");
+                            }
+                        }
+                    }
+                }
+                catch { }
+
+                // Method 4: Get lowest level (PYTHON EQUIVALENT)
+                try
+                {
+                    FilteredElementCollector collector = new FilteredElementCollector(_doc)
+                        .OfClass(typeof(Level));
+                    List<Level> allLevels = collector.Cast<Level>().ToList();
+
+                    if (allLevels.Count > 0)
+                    {
+                        Level lowestLevel = allLevels.OrderBy(l => l.Elevation).First();
+                        return (lowestLevel, true, $"Using lowest level: {lowestLevel.Name}");
+                    }
+                }
+                catch { }
+
+                // Method 5: Use default level (PYTHON EQUIVALENT)
+                try
+                {
+                    FilteredElementCollector collector = new FilteredElementCollector(_doc)
+                        .OfClass(typeof(Level));
+                    List<Level> allLevels = collector.Cast<Level>().ToList();
+
+                    foreach (Level lvl in allLevels)
+                    {
+                        if (lvl.Name == "0" || lvl.Name == "Ground Floor")
+                        {
+                            return (lvl, true, $"Using default level: {lvl.Name}");
+                        }
+                    }
+
+                    if (allLevels.Count > 0)
+                    {
+                        return (allLevels[0], true, $"Using first available level: {allLevels[0].Name}");
+                    }
+                }
+                catch { }
+
+                return (null, false, "Cannot find any level!");
             }
-            catch
+            catch (Exception ex)
             {
-                return (null, false, "Error getting element level!");
+                return (null, false, $"Error getting level: {ex.Message}");
             }
         }
 
-        private (RoofBase roof, bool success) CreateValidRoofFootprint(List<XYZ> points, Level level, RoofType roofType, double slopeDegrees)
+        // ============================================================================
+        // ROOF CREATION - PYTHON EQUIVALENT
+        // ============================================================================
+
+        private (RoofBase roof, bool slopeSuccess) CreateValidRoofFootprint(
+            List<XYZ> points, Level level, RoofType roofType, double slopeDegrees)
         {
-            // Create roof footprint and set slope
             try
             {
-                List<XYZ> flattenedPoints = points.Select(pt => new XYZ(pt.X, pt.Y, level.Elevation)).ToList();
+                // Flatten points to level elevation
+                List<XYZ> flattenedPoints = points
+                    .Select(pt => new XYZ(pt.X, pt.Y, level.Elevation))
+                    .ToList();
 
+                // Create curve array
                 CurveArray curveArray = new CurveArray();
                 for (int i = 0; i < flattenedPoints.Count; i++)
                 {
@@ -439,17 +520,22 @@ namespace SimpleBIM.Commands.As
                     return (null, false);
                 }
 
+                // Create roof
                 ModelCurveArray modelCurveArray = new ModelCurveArray();
-
                 try
                 {
-                    RoofBase roof = _doc.Create.NewFootPrintRoof(curveArray, level, roofType, out modelCurveArray);
+                    RoofBase roof = _doc.Create.NewFootPrintRoof(
+                        curveArray, level, roofType, out modelCurveArray);
+
                     if (roof == null)
                     {
                         return (null, false);
                     }
 
-                    bool slopeSuccess = SetSlopeOnLowestEdges(roof, points, slopeDegrees, modelCurveArray);
+                    // Set slope on lowest edges
+                    bool slopeSuccess = SetSlopeOnLowestEdges(
+                        roof, points, slopeDegrees, modelCurveArray);
+
                     return (roof, slopeSuccess);
                 }
                 catch
@@ -463,16 +549,21 @@ namespace SimpleBIM.Commands.As
             }
         }
 
-        private bool SetSlopeOnLowestEdges(RoofBase roof, List<XYZ> originalPoints, double slopeDegrees, ModelCurveArray modelCurveArray)
+        private bool SetSlopeOnLowestEdges(
+            RoofBase roof, List<XYZ> originalPoints,
+            double slopeDegrees, ModelCurveArray modelCurveArray)
         {
-            // Set slope on lowest edges of roof
             try
             {
                 double minZ = originalPoints.Min(pt => pt.Z);
                 double tolerance = 0.001;
-                List<XYZ> lowestPoints = originalPoints.Where(p => Math.Abs(p.Z - minZ) < tolerance).ToList();
+                List<XYZ> lowestPoints = originalPoints
+                    .Where(p => Math.Abs(p.Z - minZ) < tolerance)
+                    .ToList();
 
-                List<(ModelCurve curveElem, double length)> lowestEdges = new List<(ModelCurve, double)>();
+                // Find lowest edges
+                List<(ModelCurve element, double length)> lowestEdges =
+                    new List<(ModelCurve, double)>();
 
                 foreach (ModelCurve curveElem in modelCurveArray)
                 {
@@ -505,9 +596,13 @@ namespace SimpleBIM.Commands.As
                     return false;
                 }
 
+                // Select longest edge
                 var bestEdge = lowestEdges.OrderByDescending(x => x.length).First();
 
-                Parameter definesSlopeParam = bestEdge.curveElem.get_Parameter(BuiltInParameter.ROOF_CURVE_IS_SLOPE_DEFINING);
+                // Set slope defining
+                Parameter definesSlopeParam = bestEdge.element
+                    .get_Parameter(BuiltInParameter.ROOF_CURVE_IS_SLOPE_DEFINING);
+
                 if (definesSlopeParam != null && !definesSlopeParam.IsReadOnly)
                 {
                     definesSlopeParam.Set(1);
@@ -517,7 +612,10 @@ namespace SimpleBIM.Commands.As
                     return false;
                 }
 
-                Parameter slopeParam = bestEdge.curveElem.get_Parameter(BuiltInParameter.ROOF_SLOPE);
+                // Set slope angle
+                Parameter slopeParam = bestEdge.element
+                    .get_Parameter(BuiltInParameter.ROOF_SLOPE);
+
                 if (slopeParam != null && !slopeParam.IsReadOnly)
                 {
                     double slopeRadians = slopeDegrees * (Math.PI / 180.0);
@@ -534,14 +632,14 @@ namespace SimpleBIM.Commands.As
         }
 
         // ============================================================================
-        // OFFSET CALCULATION & APPLICATION
+        // OFFSET CALCULATION - PYTHON EQUIVALENT
         // ============================================================================
 
         private (bool success, double finalOffset, string offsetType, double thicknessMm)
-            OffsetRoofByThickness(RoofBase roof, RoofType roofType, int faceNormalDirection,
+            OffsetRoofByThickness(
+                RoofBase roof, RoofType roofType, int faceNormalDirection,
                 List<XYZ> originalPoints, Level level, double slopeDegrees)
         {
-            // Calculate and apply offset based on thickness, slope, and elevation difference
             try
             {
                 double thickness = GetRoofTypeThickness(roofType);
@@ -553,12 +651,12 @@ namespace SimpleBIM.Commands.As
                 double thicknessOffset;
                 string offsetType;
 
-                if (faceNormalDirection == 1)
+                if (faceNormalDirection == 1) // TOP
                 {
                     thicknessOffset = 0.0;
                     offsetType = "TOP";
                 }
-                else if (faceNormalDirection == -1)
+                else if (faceNormalDirection == -1) // BOTTOM
                 {
                     double slopeRadians = slopeDegrees * (Math.PI / 180.0);
                     double cosSlope = Math.Cos(slopeRadians);
@@ -576,7 +674,7 @@ namespace SimpleBIM.Commands.As
                     thicknessOffset = -adjustedThickness;
                     offsetType = "BOTTOM";
                 }
-                else
+                else // UNKNOWN
                 {
                     thicknessOffset = 0.0;
                     offsetType = "UNKNOWN";
@@ -584,9 +682,9 @@ namespace SimpleBIM.Commands.As
 
                 double finalOffset = elevationDiff + thicknessOffset;
 
+                // Try to set offset parameter
                 try
                 {
-                    // Try to find and set offset parameter
                     Parameter baseOffsetParam = roof.LookupParameter("Base Offset");
                     if (baseOffsetParam == null)
                     {
@@ -596,11 +694,12 @@ namespace SimpleBIM.Commands.As
                     if (baseOffsetParam != null && !baseOffsetParam.IsReadOnly)
                     {
                         baseOffsetParam.Set(finalOffset);
-                        double thicknessMm = UnitUtils.ConvertFromInternalUnits(thickness, UnitTypeId.Millimeters);
+                        double thicknessMm = UnitUtils.ConvertFromInternalUnits(
+                            thickness, UnitTypeId.Millimeters);
                         return (true, finalOffset, offsetType, thicknessMm);
                     }
 
-                    // Search through all parameters
+                    // Search all parameters
                     foreach (Parameter param in roof.Parameters)
                     {
                         try
@@ -612,22 +711,22 @@ namespace SimpleBIM.Commands.As
                                 !param.IsReadOnly)
                             {
                                 param.Set(finalOffset);
-                                double thicknessMm = UnitUtils.ConvertFromInternalUnits(thickness, UnitTypeId.Millimeters);
+                                double thicknessMm = UnitUtils.ConvertFromInternalUnits(
+                                    thickness, UnitTypeId.Millimeters);
                                 return (true, finalOffset, offsetType, thicknessMm);
                             }
                         }
-                        catch
-                        {
-                            continue;
-                        }
+                        catch { continue; }
                     }
 
-                    double thicknessMmFallback = UnitUtils.ConvertFromInternalUnits(thickness, UnitTypeId.Millimeters);
+                    double thicknessMmFallback = UnitUtils.ConvertFromInternalUnits(
+                        thickness, UnitTypeId.Millimeters);
                     return (false, finalOffset, offsetType, thicknessMmFallback);
                 }
                 catch
                 {
-                    double thicknessMmFallback = UnitUtils.ConvertFromInternalUnits(thickness, UnitTypeId.Millimeters);
+                    double thicknessMmFallback = UnitUtils.ConvertFromInternalUnits(
+                        thickness, UnitTypeId.Millimeters);
                     return (false, finalOffset, offsetType, thicknessMmFallback);
                 }
             }
@@ -637,80 +736,21 @@ namespace SimpleBIM.Commands.As
             }
         }
 
+        // ============================================================================
+        // UPDATE SLOPE - PYTHON EQUIVALENT
+        // ============================================================================
+
         private bool UpdateRoofSlope(RoofBase roof, double slopeDegrees)
         {
-            // Update slope angle on roof
             try
             {
-                // **SỬA LỖI: RoofBase không có GetSlopeDefiningLines() và SetSlopeAngle()**
-                // **Cách sửa: Chỉ dùng slope parameter**
-
-                // Phương pháp 1: Tìm Slope parameter
+                // Method 1: Slope parameter
                 Parameter slopeParam = roof.LookupParameter("Slope");
                 if (slopeParam != null && !slopeParam.IsReadOnly)
                 {
                     double slopeRatio = Math.Tan(slopeDegrees * (Math.PI / 180.0));
                     slopeParam.Set(slopeRatio);
                     return true;
-                }
-
-                // Phương pháp 2: Tìm các parameter khác có thể set slope
-                foreach (Parameter param in roof.Parameters)
-                {
-                    try
-                    {
-                        string paramName = param.Definition?.Name ?? "";
-
-                        // Kiểm tra các parameter name có thể chứa slope
-                        if ((paramName.IndexOf("slope", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                             paramName.IndexOf("pitch", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                             paramName.IndexOf("angle", StringComparison.OrdinalIgnoreCase) >= 0) &&
-                            param.StorageType == StorageType.Double &&
-                            !param.IsReadOnly)
-                        {
-                            double slopeRatio = Math.Tan(slopeDegrees * (Math.PI / 180.0));
-                            param.Set(slopeRatio);
-                            return true;
-                        }
-                    }
-                    catch
-                    {
-                        continue;
-                    }
-                }
-
-                // Phương pháp 3: Thử set qua ModelCurves nếu có
-                try
-                {
-                    // Lấy ModelCurveArray từ roof
-                    ModelCurveArray modelCurves = null;
-
-                    // Tìm các edge curves có thể set slope
-                    foreach (ElementId elemId in roof.GetDependentElements(new ElementClassFilter(typeof(ModelCurve))))
-                    {
-                        ModelCurve modelCurve = _doc.GetElement(elemId) as ModelCurve;
-                        if (modelCurve != null)
-                        {
-                            // Kiểm tra nếu curve này có slope parameter
-                            Parameter definesSlopeParam = modelCurve.get_Parameter(BuiltInParameter.ROOF_CURVE_IS_SLOPE_DEFINING);
-                            if (definesSlopeParam != null && !definesSlopeParam.IsReadOnly)
-                            {
-                                definesSlopeParam.Set(1);
-
-                                Parameter curveSlopeParam = modelCurve.get_Parameter(BuiltInParameter.ROOF_SLOPE);
-                                if (curveSlopeParam != null && !curveSlopeParam.IsReadOnly)
-                                {
-                                    double slopeRadians = slopeDegrees * (Math.PI / 180.0);
-                                    curveSlopeParam.Set(slopeRadians);
-                                    return true;
-                                }
-                            }
-                        }
-                    }
-                }
-                catch
-                {
-                    // Continue
                 }
 
                 return false;
@@ -722,12 +762,11 @@ namespace SimpleBIM.Commands.As
         }
 
         // ============================================================================
-        // ROOF TYPE SELECTOR
+        // ROOF TYPE SELECTOR - PYTHON EQUIVALENT
         // ============================================================================
 
         private List<(string name, RoofType roofType)> GetAllRoofTypes()
         {
-            // Get all roof types in project
             try
             {
                 FilteredElementCollector collector = new FilteredElementCollector(_doc)
@@ -747,14 +786,14 @@ namespace SimpleBIM.Commands.As
                         }
                         else
                         {
-                            typeName = $"Roof Type {rt.Id.Value}"; // CONVERSION: IntegerValue → Value
+                            typeName = $"Roof Type {rt.Id.IntegerValue}";
                         }
 
                         roofTypeList.Add((typeName, rt));
                     }
                     catch
                     {
-                        roofTypeList.Add(($"Roof Type {rt.Id.Value}", rt)); // CONVERSION: IntegerValue → Value
+                        roofTypeList.Add(($"Roof Type {rt.Id.IntegerValue}", rt));
                     }
                 }
 
@@ -768,7 +807,6 @@ namespace SimpleBIM.Commands.As
 
         private (RoofType roofType, string roofTypeName) ShowRoofTypeSelector()
         {
-            // Show dialog to select roof type
             try
             {
                 List<(string name, RoofType roofType)> roofTypes = GetAllRoofTypes();
@@ -778,7 +816,8 @@ namespace SimpleBIM.Commands.As
                     return (null, null);
                 }
 
-                Dictionary<string, RoofType> typeDict = roofTypes.ToDictionary(x => x.name, x => x.roofType);
+                Dictionary<string, RoofType> typeDict = roofTypes
+                    .ToDictionary(x => x.name, x => x.roofType);
                 List<string> typeNames = typeDict.Keys.OrderBy(x => x).ToList();
 
                 using (WinForms.Form form = new WinForms.Form())
@@ -789,6 +828,7 @@ namespace SimpleBIM.Commands.As
                     form.FormBorderStyle = WinForms.FormBorderStyle.FixedDialog;
                     form.MaximizeBox = false;
                     form.MinimizeBox = false;
+                    form.StartPosition = WinForms.FormStartPosition.CenterScreen;
 
                     WinForms.Label label = new WinForms.Label
                     {
@@ -871,70 +911,106 @@ namespace SimpleBIM.Commands.As
                     }
                 }
             }
-            catch
+            catch (Exception ex)
             {
+                ShowError($"Error: {ex.Message}");
                 return (null, null);
             }
         }
 
         // ============================================================================
-        // MAIN WORKFLOW
+        // BATCH FACE SELECTION - PYTHON EQUIVALENT
+        // ============================================================================
+
+        private class FaceData
+        {
+            public Element Element { get; set; }
+            public Face Face { get; set; }
+            public Reference Reference { get; set; }
+            public int Index { get; set; }
+        }
+
+        private List<FaceData> PickMultipleFaces()
+        {
+            List<FaceData> facesData = new List<FaceData>();
+
+            ShowMessage(
+                "BATCH ROOF CREATOR\n\n" +
+                "Instructions:\n" +
+                "1. Click OK to start\n" +
+                "2. Select sloped faces one by one\n" +
+                "3. Press ESC when done\n",
+                "Batch Mode"
+            );
+
+            try
+            {
+                while (true)
+                {
+                    try
+                    {
+                        Reference reference = _uidoc.Selection.PickObject(
+                            ObjectType.Face,
+                            "Select sloped face (ESC to finish)"
+                        );
+
+                        Element element = _doc.GetElement(reference.ElementId);
+                        GeometryObject geometryObject = element.GetGeometryObjectFromReference(reference);
+
+                        if (geometryObject is Face face)
+                        {
+                            if (IsFaceSloped(face))
+                            {
+                                facesData.Add(new FaceData
+                                {
+                                    Element = element,
+                                    Face = face,
+                                    Reference = reference,
+                                    Index = facesData.Count + 1
+                                });
+                            }
+                            else
+                            {
+                                ShowWarning("Selected face is not sloped!");
+                            }
+                        }
+                    }
+                    catch (Autodesk.Revit.Exceptions.OperationCanceledException)
+                    {
+                        // User pressed ESC - exit loop
+                        break;
+                    }
+                    catch
+                    {
+                        break;
+                    }
+                }
+            }
+            catch { }
+
+            return facesData;
+        }
+
+        // ============================================================================
+        // MAIN WORKFLOW - PYTHON EQUIVALENT
         // ============================================================================
 
         private Result RunMain()
         {
             try
             {
-                ShowMessage(
-                    "INTEGRATED ROOF TOOL\n\n" +
-                    "Process:\n" +
-                    "1. Select sloped face\n" +
-                    "2. Detect face orientation (TOP/BOTTOM)\n" +
-                    "3. Create roof footprint\n" +
-                    "4. Extract roof type thickness\n" +
-                    "5. Calculate slope\n" +
-                    "6. Set slope on edges\n" +
-                    "7. Apply smart offset\n\n" +
-                    "Start now...",
-                    "Roof Tool"
-                );
+                // Step 1: Pick multiple faces
+                List<FaceData> facesData = PickMultipleFaces();
 
-                FaceData faceData = PickSingleFace();
-                if (faceData == null)
+                if (facesData == null || facesData.Count == 0)
                 {
+                    ShowError("No faces selected!");
                     return Result.Cancelled;
                 }
 
-                if (!IsFaceSloped(faceData.Face))
-                {
-                    ShowError("Selected face is horizontal!\nPlease select a sloped face.");
-                    return Result.Failed;
-                }
+                ShowMessage($"Total faces selected: {facesData.Count}", "Summary");
 
-                int faceNormalDirection = GetFaceNormalDirection(faceData.Face);
-
-                List<XYZ> originalPoints = ExtractAllFacePoints(faceData.Face, faceData.Element);
-                if (originalPoints == null || originalPoints.Count == 0)
-                {
-                    ShowError("Cannot extract points from face!");
-                    return Result.Failed;
-                }
-
-                List<XYZ> cleanPoints = CleanupDuplicatePoints(originalPoints);
-                if (cleanPoints.Count < 3)
-                {
-                    ShowError("Insufficient points!");
-                    return Result.Failed;
-                }
-
-                double? slopeDegreesNullable = GetSlopeFromFaceNormal(faceData.Face);
-                if (!slopeDegreesNullable.HasValue)
-                {
-                    ShowError("Cannot calculate slope!");
-                    return Result.Failed;
-                }
-                double slopeDegrees = slopeDegreesNullable.Value;
-
+                // Step 2: Select roof type
                 var (roofType, roofTypeName) = ShowRoofTypeSelector();
                 if (roofType == null)
                 {
@@ -942,51 +1018,112 @@ namespace SimpleBIM.Commands.As
                     return Result.Cancelled;
                 }
 
-                using (Transaction trans = new Transaction(_doc, "Create Roof"))
+                // Step 3: Create roofs in batch
+                using (Transaction trans = new Transaction(_doc, "Create Multiple Roofs"))
                 {
                     trans.Start();
 
                     try
                     {
-                        var (level, levelOk, levelMsg) = GetLevelFromElement(faceData.Element);
-                        if (!levelOk || level == null)
+                        int successCount = 0;
+                        int failedCount = 0;
+                        List<string> results = new List<string>();
+
+                        for (int idx = 0; idx < facesData.Count; idx++)
                         {
-                            trans.RollBack();
-                            ShowError(levelMsg, "Error!");
-                            return Result.Failed;
+                            FaceData faceData = facesData[idx];
+
+                            try
+                            {
+                                // Extract face info
+                                List<XYZ> originalPoints = ExtractAllFacePoints(
+                                    faceData.Face, faceData.Element);
+
+                                if (originalPoints == null || originalPoints.Count == 0)
+                                {
+                                    results.Add($"Face {idx + 1}: Cannot extract points");
+                                    failedCount++;
+                                    continue;
+                                }
+
+                                List<XYZ> cleanPoints = CleanupDuplicatePoints(originalPoints);
+                                if (cleanPoints.Count < 3)
+                                {
+                                    results.Add($"Face {idx + 1}: Insufficient points");
+                                    failedCount++;
+                                    continue;
+                                }
+
+                                // Get face normal and slope
+                                int faceNormalDirection = GetFaceNormalDirection(faceData.Face);
+                                double? slopeDegreesNullable = GetSlopeFromFaceNormal(faceData.Face);
+
+                                if (!slopeDegreesNullable.HasValue)
+                                {
+                                    results.Add($"Face {idx + 1}: Cannot calculate slope");
+                                    failedCount++;
+                                    continue;
+                                }
+                                double slopeDegrees = slopeDegreesNullable.Value;
+
+                                // Get level
+                                var (level, levelOk, levelMsg) = GetLevelFromElement(faceData.Element);
+                                if (!levelOk || level == null)
+                                {
+                                    results.Add($"Face {idx + 1}: {levelMsg}");
+                                    failedCount++;
+                                    continue;
+                                }
+
+                                // Create roof
+                                var (roof, slopeSuccess) = CreateValidRoofFootprint(
+                                    cleanPoints, level, roofType, slopeDegrees);
+
+                                if (roof == null)
+                                {
+                                    results.Add($"Face {idx + 1}: Cannot create roof");
+                                    failedCount++;
+                                    continue;
+                                }
+
+                                // Apply offset and slope
+                                OffsetRoofByThickness(
+                                    roof, roofType, faceNormalDirection,
+                                    cleanPoints, level, slopeDegrees);
+
+                                UpdateRoofSlope(roof, slopeDegrees);
+
+                                results.Add($"Face {idx + 1}: OK (ID: {roof.Id.IntegerValue})");
+                                successCount++;
+                            }
+                            catch (Exception ex)
+                            {
+                                results.Add($"Face {idx + 1}: Error - {ex.Message}");
+                                failedCount++;
+                            }
                         }
-
-                        var (roof, slopeSuccess) = CreateValidRoofFootprint(cleanPoints, level, roofType, slopeDegrees);
-                        if (roof == null)
-                        {
-                            trans.RollBack();
-                            ShowError("Cannot create roof!");
-                            return Result.Failed;
-                        }
-
-                        var (offsetSuccess, finalOffset, offsetType, thicknessMm) =
-                            OffsetRoofByThickness(roof, roofType, faceNormalDirection, cleanPoints, level, slopeDegrees);
-
-                        bool slopeUpdateSuccess = UpdateRoofSlope(roof, slopeDegrees);
 
                         trans.Commit();
 
-                        string resultMessage = "SUCCESS - Roof created!\n\n" +
-                                              "ROOF INFO:\n" +
-                                              $"• ID: {roof.Id.Value}\n" + // CONVERSION: IntegerValue → Value
-                                              $"• Type: {roofTypeName ?? "Unknown"}\n" +
-                                              $"• Level: {level.Name}\n\n" +
-                                              "FACE INFO:\n" +
-                                              $"• Orientation: {(faceNormalDirection == 1 ? "TOP" : faceNormalDirection == -1 ? "BOTTOM" : "UNKNOWN")}\n" +
-                                              $"• Thickness: {thicknessMm:F2}mm\n" +
-                                              $"• Offset Type: {offsetType}\n\n" +
-                                              "SLOPE INFO:\n" +
-                                              $"• Angle: {slopeDegrees:F2}°\n" +
-                                              $"• Set: {(slopeSuccess ? "OK" : "Partial")}\n" +
-                                              $"• Updated: {(slopeUpdateSuccess ? "OK" : "Partial")}\n" +
-                                              $"• Offset: {(offsetSuccess ? "OK" : "Partial")}";
+                        // Show results
+                        string resultMsg = "BATCH ROOF CREATION COMPLETE\n\n";
+                        resultMsg += $"SUCCESS: {successCount}\n";
+                        resultMsg += $"FAILED: {failedCount}\n\n";
+                        resultMsg += "Details:\n";
 
-                        ShowMessage(resultMessage, "SUCCESS");
+                        // Show first 20 results
+                        int displayCount = Math.Min(results.Count, 20);
+                        for (int i = 0; i < displayCount; i++)
+                        {
+                            resultMsg += results[i] + "\n";
+                        }
+
+                        if (results.Count > 20)
+                        {
+                            resultMsg += $"\n... and {results.Count - 20} more";
+                        }
+
+                        ShowMessage(resultMsg, "BATCH RESULTS");
                         return Result.Succeeded;
                     }
                     catch (Exception ex)

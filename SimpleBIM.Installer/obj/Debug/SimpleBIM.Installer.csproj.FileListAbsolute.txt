@@ -7,3 +7,12 @@ C:\Users\CHUONG_BON\source\repos\SimpleBIM.AS.tab\SimpleBIM.Installer\obj\Debug\
 C:\Users\CHUONG_BON\source\repos\SimpleBIM.AS.tab\SimpleBIM.Installer\obj\Debug\SimpleBIM.Installer.csproj.CoreCompileInputs.cache
 C:\Users\CHUONG_BON\source\repos\SimpleBIM.AS.tab\SimpleBIM.Installer\obj\Debug\SimpleBIM.Installer.exe
 C:\Users\CHUONG_BON\source\repos\SimpleBIM.AS.tab\SimpleBIM.Installer\obj\Debug\SimpleBIM.Installer.pdb
+C:\Users\CHUONG_BON\source\repos\SimpleBIM\SimpleBIM.Installer\bin\Debug\SimpleBIM.Installer.exe.config
+C:\Users\CHUONG_BON\source\repos\SimpleBIM\SimpleBIM.Installer\bin\Debug\SimpleBIM.Installer.exe
+C:\Users\CHUONG_BON\source\repos\SimpleBIM\SimpleBIM.Installer\bin\Debug\SimpleBIM.Installer.pdb
+C:\Users\CHUONG_BON\source\repos\SimpleBIM\SimpleBIM.Installer\obj\Debug\SimpleBIM.Installer.csproj.AssemblyReference.cache
+C:\Users\CHUONG_BON\source\repos\SimpleBIM\SimpleBIM.Installer\obj\Debug\Interop.IWshRuntimeLibrary.dll
+C:\Users\CHUONG_BON\source\repos\SimpleBIM\SimpleBIM.Installer\obj\Debug\SimpleBIM.Installer.csproj.ResolveComReference.cache
+C:\Users\CHUONG_BON\source\repos\SimpleBIM\SimpleBIM.Installer\obj\Debug\SimpleBIM.Installer.csproj.CoreCompileInputs.cache
+C:\Users\CHUONG_BON\source\repos\SimpleBIM\SimpleBIM.Installer\obj\Debug\SimpleBIM.Installer.exe
+C:\Users\CHUONG_BON\source\repos\SimpleBIM\SimpleBIM.Installer\obj\Debug\SimpleBIM.Installer.pdb

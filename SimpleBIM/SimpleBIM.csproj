@@ -11,7 +11,6 @@
     <AssemblyName>SimpleBIM</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
-    <Deterministic>true</Deterministic>
     <PlatformTarget>AnyCPU</PlatformTarget>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -19,6 +18,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\</OutputPath>
+    <DisableImplicitAssemblyVersion>true</DisableImplicitAssemblyVersion>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -60,6 +60,7 @@
     </Reference>
     <Reference Include="System.Core" />
     <Reference Include="System.Drawing" />
+    <Reference Include="System.IO.Compression.FileSystem" />
     <Reference Include="System.Management" />
     <Reference Include="System.Text.Json, Version=9.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL" />
     <Reference Include="System.Windows.Forms" />
@@ -73,6 +74,7 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Update\ForceVersion.cs" />
     <Compile Include="App.cs" />
     <Compile Include="Commands\As\AdaptiveFromCSV.cs" />
     <Compile Include="Commands\As\FinishFaceFloors.cs" />
@@ -84,6 +86,7 @@
     <Compile Include="Commands\As\TryWallFace.cs" />
     <Compile Include="Commands\As\TryXago.cs" />
     <Compile Include="Commands\As\WallsFromCAD.cs" />
+    <Compile Include="Commands\CheckForUpdatesCommand.cs" />
     <Compile Include="Commands\MEPF\AlignMEP3D.cs" />
     <Compile Include="Commands\MEPF\AutoAlignConnectPipes.cs" />
     <Compile Include="Commands\MEPF\CableTraysFromCAD.cs" />
@@ -113,6 +116,16 @@
     <Compile Include="Ribbon\Panels\QsPanel.cs" />
     <Compile Include="Ribbon\RibbonManager.cs" />
     <Compile Include="ShowLicenseCommand.cs" />
+    <Compile Include="Update\InstantUpdateService.cs" />
+    <Compile Include="Update\NativeMethods.cs" />
+    <Compile Include="Update\UpdateConfiguration.cs" />
+    <Compile Include="Update\UpdateLogger.cs" />
+    <Compile Include="Update\UpdateModels.cs" />
+    <Compile Include="Update\UpdateNotificationWindow.xaml.cs">
+      <DependentUpon>UpdateNotificationWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Update\UpdateService.cs" />
+    <Compile Include="Update\VersionManager.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Icons\32\adaptivefromcsv32.png" />
@@ -142,6 +155,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+    <None Include="Update\appsettings.json" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Icons\16\license16.png" />
@@ -149,6 +163,10 @@
   </ItemGroup>
   <ItemGroup>
     <Page Include="License\LicenseWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Update\UpdateNotificationWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>

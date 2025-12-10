@@ -9,19 +9,22 @@ using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.UI.Selection;
 
+// Alias
 using WinForms = System.Windows.Forms;
 using Drawing = System.Drawing;
 
 namespace SimpleBIM.Commands.As
 {
+    /// <summary>
+    /// BATCH INTEGRATED FLOOR TOOL - CREATE MULTIPLE FLOORS WITH SLOPE
+    /// Tạo hàng loạt Floor từ nhiều mặt nghiêng với Smart Offset
+    /// Slope Arrow xuất phát TỪ lowest edge
+    /// 100% Python Equivalent Version
+    /// </summary>
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
     public class FinishFaceFloors : IExternalCommand
     {
-        // Constants
-        private const double MIN_CURVE_LENGTH_M = 0.01;
-        private double MIN_CURVE_LENGTH;
-
         // Instance variables
         private UIDocument _uidoc;
         private Document _doc;
@@ -35,9 +38,6 @@ namespace SimpleBIM.Commands.As
             _uiapp = commandData.Application;
             _uidoc = _uiapp.ActiveUIDocument;
             _doc = _uidoc.Document;
-
-            // Initialize units
-            MIN_CURVE_LENGTH = UnitUtils.ConvertToInternalUnits(MIN_CURVE_LENGTH_M, UnitTypeId.Meters);
 
             try
             {
@@ -55,107 +55,45 @@ namespace SimpleBIM.Commands.As
             }
         }
 
-        // =============================================================================
-        // HELPER METHODS
-        // =============================================================================
+        // ============================================================================
+        // UTILITIES
+        // ============================================================================
 
-        private void ShowMessage(string message, string title = "Notice")
+        private void ShowMessage(string message, string title = "Notification")
         {
-            WinForms.MessageBox.Show(message, title, WinForms.MessageBoxButtons.OK, WinForms.MessageBoxIcon.Information);
+            WinForms.MessageBox.Show(message, title,
+                WinForms.MessageBoxButtons.OK,
+                WinForms.MessageBoxIcon.Information);
         }
 
         private void ShowError(string message, string title = "Error")
         {
-            WinForms.MessageBox.Show(message, title, WinForms.MessageBoxButtons.OK, WinForms.MessageBoxIcon.Error);
+            WinForms.MessageBox.Show(message, title,
+                WinForms.MessageBoxButtons.OK,
+                WinForms.MessageBoxIcon.Error);
         }
 
-        // =============================================================================
-        // FACE SELECTION
-        // =============================================================================
-
-        private class FaceData
+        private void ShowWarning(string message, string title = "Warning")
         {
-            public Element Element { get; set; }
-            public Face Face { get; set; }
-            public Reference Reference { get; set; }
+            WinForms.MessageBox.Show(message, title,
+                WinForms.MessageBoxButtons.OK,
+                WinForms.MessageBoxIcon.Warning);
         }
 
-        private List<FaceData> PickMultipleFaces()
+        private void PrintDebug(string msg)
         {
-            List<FaceData> selectedFaces = new List<FaceData>();
-            HashSet<(long, double, double, double)> faceIds = new HashSet<(long, double, double, double)>();
-
-            try
-            {
-                Debug.WriteLine("DEBUG: Starting face selection...");
-
-                while (true)
-                {
-                    try
-                    {
-                        string promptMsg = $"Select Face (Selected: {selectedFaces.Count}) - Press ESC to finish";
-                        Reference reference = _uidoc.Selection.PickObject(ObjectType.Face, promptMsg);
-
-                        if (reference != null)
-                        {
-                            Element element = _doc.GetElement(reference.ElementId);
-                            GeometryObject geometryObject = element.GetGeometryObjectFromReference(reference);
-
-                            if (geometryObject is Face face)
-                            {
-                                var faceId = (element.Id.Value, reference.GlobalPoint.X, reference.GlobalPoint.Y, reference.GlobalPoint.Z);
-
-                                if (!faceIds.Contains(faceId))
-                                {
-                                    selectedFaces.Add(new FaceData
-                                    {
-                                        Element = element,
-                                        Face = face,
-                                        Reference = reference
-                                    });
-                                    faceIds.Add(faceId);
-                                    Debug.WriteLine($"DEBUG: Face selected (Total: {selectedFaces.Count})");
-                                }
-                            }
-                        }
-                    }
-                    catch (Autodesk.Revit.Exceptions.OperationCanceledException)
-                    {
-                        Debug.WriteLine("DEBUG: User pressed ESC - selection ended");
-                        break;
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"DEBUG: Error: {ex.Message}");
-                        break;
-                    }
-                }
-
-                if (selectedFaces.Count == 0)
-                {
-                    ShowMessage("No faces selected.");
-                    return null;
-                }
-
-                Debug.WriteLine($"DEBUG: Total faces selected: {selectedFaces.Count}");
-                return selectedFaces;
-            }
-            catch (Exception ex)
-            {
-                ShowError($"Error selecting faces: {ex.Message}");
-                return null;
-            }
+            System.Diagnostics.Debug.WriteLine(msg);
         }
 
-        // =============================================================================
-        // FLOOR TYPE MANAGEMENT
-        // =============================================================================
+        // ============================================================================
+        // THICKNESS EXTRACTION - PYTHON EQUIVALENT (4 METHODS)
+        // ============================================================================
 
         private double GetFloorTypeThickness(FloorType floorType)
         {
             try
             {
-                // Method 1: Get from CompoundStructure
+                // Method 1: Compound Structure
                 try
                 {
                     CompoundStructure compound = floorType.GetCompoundStructure();
@@ -168,12 +106,9 @@ namespace SimpleBIM.Commands.As
                         }
                     }
                 }
-                catch
-                {
-                    // Continue to next method
-                }
+                catch { }
 
-                // Method 2: Get from "Thickness" parameter
+                // Method 2: Thickness Parameter
                 try
                 {
                     Parameter param = floorType.LookupParameter("Thickness");
@@ -182,12 +117,9 @@ namespace SimpleBIM.Commands.As
                         return param.AsDouble();
                     }
                 }
-                catch
-                {
-                    // Continue to next method
-                }
+                catch { }
 
-                // Method 3: Search for thickness in all parameters
+                // Method 3: Search All Parameters
                 try
                 {
                     IList<Parameter> parameters = floorType.GetOrderedParameters();
@@ -209,18 +141,12 @@ namespace SimpleBIM.Commands.As
                                 }
                             }
                         }
-                        catch
-                        {
-                            continue;
-                        }
+                        catch { continue; }
                     }
                 }
-                catch
-                {
-                    // Continue to next method
-                }
+                catch { }
 
-                // Method 4: Sum layer thicknesses
+                // Method 4: Sum Layer Thicknesses
                 try
                 {
                     CompoundStructure compound = floorType.GetCompoundStructure();
@@ -233,10 +159,7 @@ namespace SimpleBIM.Commands.As
                             {
                                 total += compound.GetLayerWidth(i);
                             }
-                            catch
-                            {
-                                continue;
-                            }
+                            catch { continue; }
                         }
                         if (total > 0)
                         {
@@ -244,379 +167,62 @@ namespace SimpleBIM.Commands.As
                         }
                     }
                 }
-                catch
-                {
-                    // Return 0 if all methods fail
-                }
+                catch { }
 
-                return 0;
+                return 0.0;
             }
             catch
             {
-                return 0;
+                return 0.0;
             }
         }
 
-        private Dictionary<string, FloorType> GetAllFloorTypes()
+        // ============================================================================
+        // FACE ANALYSIS - PYTHON EQUIVALENT
+        // ============================================================================
+
+        private bool IsFaceSloped(Face face)
         {
-            try
-            {
-                Debug.WriteLine("DEBUG: get_all_floor_types() started");
-                Dictionary<string, FloorType> floorTypes = new Dictionary<string, FloorType>();
-
-                try
-                {
-                    Debug.WriteLine("DEBUG: Creating FilteredElementCollector...");
-                    FilteredElementCollector collector = new FilteredElementCollector(_doc)
-                        .OfClass(typeof(FloorType));
-
-                    Debug.WriteLine("DEBUG: Collector created, iterating through floor types...");
-
-                    int count = 0;
-                    foreach (FloorType floorType in collector)
-                    {
-                        count++;
-                        try
-                        {
-                            string name = null;
-
-                            // Get name from Name property
-                            try
-                            {
-                                name = floorType.Name;
-                            }
-                            catch
-                            {
-                                // Continue to next method
-                            }
-
-                            // Get name from SYMBOL_NAME_PARAM
-                            if (string.IsNullOrEmpty(name))
-                            {
-                                try
-                                {
-                                    Parameter param = floorType.get_Parameter(BuiltInParameter.SYMBOL_NAME_PARAM);
-                                    if (param != null && param.HasValue)
-                                    {
-                                        name = param.AsString();
-                                    }
-                                }
-                                catch
-                                {
-                                    // Continue to next method
-                                }
-                            }
-
-                            // Fallback name
-                            if (string.IsNullOrEmpty(name))
-                            {
-                                name = $"FloorType_{floorType.Id.Value}";
-                            }
-
-                            if (!string.IsNullOrEmpty(name) && !floorTypes.ContainsKey(name))
-                            {
-                                floorTypes.Add(name, floorType);
-                            }
-                        }
-                        catch (Exception e)
-                        {
-                            Debug.WriteLine($"DEBUG: Error processing floor type #{count}: {e.Message}");
-                            continue;
-                        }
-                    }
-
-                    Debug.WriteLine($"DEBUG: Total floor types found: {floorTypes.Count}");
-
-                    if (floorTypes.Count > 0)
-                    {
-                        return floorTypes;
-                    }
-                    else
-                    {
-                        Debug.WriteLine("DEBUG: WARNING - No floor types found");
-                        return null;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine($"DEBUG: Error in collector: {ex.Message}");
-                    return null;
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"DEBUG: Error in get_all_floor_types: {ex.Message}");
-                return null;
-            }
-        }
-
-        // =============================================================================
-        // FLOOR TYPE SELECTION FORM
-        // =============================================================================
-
-        private class SelectFloorTypeForm : WinForms.Form
-        {
-            public FloorType SelectedFloorType { get; private set; }
-            public string SelectedFloorTypeName { get; private set; }
-
-            private Dictionary<string, FloorType> _floorTypesDict;
-            private WinForms.ComboBox _cmbFloorType;
-
-            public SelectFloorTypeForm(Dictionary<string, FloorType> floorTypesDict)
-            {
-                _floorTypesDict = floorTypesDict;
-                InitializeComponent();
-            }
-
-            private void InitializeComponent()
-            {
-                this.Text = "Select Floor Type";
-                this.Width = 500;
-                this.Height = 300;
-                this.StartPosition = WinForms.FormStartPosition.CenterScreen;
-                this.BackColor = Drawing.Color.White;
-                this.FormBorderStyle = WinForms.FormBorderStyle.FixedDialog;
-                this.MaximizeBox = false;
-
-                // Title label
-                WinForms.Label lblTitle = new WinForms.Label
-                {
-                    Text = "SELECT FLOOR TYPE",
-                    Font = new Drawing.Font("Arial", 12, Drawing.FontStyle.Bold),
-                    ForeColor = Drawing.Color.DarkBlue,
-                    Location = new Drawing.Point(20, 20),
-                    Size = new Drawing.Size(450, 25)
-                };
-                this.Controls.Add(lblTitle);
-
-                // Type label
-                WinForms.Label lblType = new WinForms.Label
-                {
-                    Text = "Floor Type:",
-                    Font = new Drawing.Font("Arial", 10),
-                    Location = new Drawing.Point(20, 60),
-                    Size = new Drawing.Size(100, 20)
-                };
-                this.Controls.Add(lblType);
-
-                // ComboBox for floor types
-                _cmbFloorType = new WinForms.ComboBox
-                {
-                    Location = new Drawing.Point(130, 60),
-                    Size = new Drawing.Size(330, 25),
-                    Font = new Drawing.Font("Arial", 9),
-                    DropDownStyle = WinForms.ComboBoxStyle.DropDownList
-                };
-
-                // Populate ComboBox
-                List<string> floorTypeNames = _floorTypesDict.Keys.OrderBy(x => x).ToList();
-                foreach (string name in floorTypeNames)
-                {
-                    FloorType floorType = _floorTypesDict[name];
-                    double thickness = GetFloorTypeThicknessStatic(floorType);
-                    double thicknessMm = UnitUtils.ConvertFromInternalUnits(thickness, UnitTypeId.Millimeters);
-
-                    string displayName;
-                    if (thicknessMm > 0)
-                    {
-                        displayName = $"{name} ({thicknessMm:F0}mm)";
-                    }
-                    else
-                    {
-                        displayName = name;
-                    }
-
-                    _cmbFloorType.Items.Add(displayName);
-                }
-
-                if (floorTypeNames.Count > 0)
-                {
-                    _cmbFloorType.SelectedIndex = 0;
-                }
-
-                this.Controls.Add(_cmbFloorType);
-
-                // Info label
-                WinForms.Label lblInfo = new WinForms.Label
-                {
-                    Text = "Select a floor type to create floors on selected faces",
-                    Font = new Drawing.Font("Arial", 9),
-                    ForeColor = Drawing.Color.Gray,
-                    Location = new Drawing.Point(20, 95),
-                    Size = new Drawing.Size(440, 30)
-                };
-                this.Controls.Add(lblInfo);
-
-                // OK button
-                WinForms.Button btnOk = new WinForms.Button
-                {
-                    Text = "CREATE FLOORS",
-                    Location = new Drawing.Point(120, 140),
-                    Size = new Drawing.Size(150, 35),
-                    BackColor = Drawing.Color.LightBlue,
-                    Font = new Drawing.Font("Arial", 10, Drawing.FontStyle.Bold)
-                };
-                btnOk.Click += BtnOK_Click;
-                this.Controls.Add(btnOk);
-
-                // Cancel button
-                WinForms.Button btnCancel = new WinForms.Button
-                {
-                    Text = "CANCEL",
-                    Location = new Drawing.Point(280, 140),
-                    Size = new Drawing.Size(100, 35),
-                    Font = new Drawing.Font("Arial", 10)
-                };
-                btnCancel.Click += BtnCancel_Click;
-                this.Controls.Add(btnCancel);
-            }
-
-            private static double GetFloorTypeThicknessStatic(FloorType floorType)
-            {
-                // Static version for use in form initialization
-                try
-                {
-                    // Method 1: Get from CompoundStructure
-                    try
-                    {
-                        CompoundStructure compound = floorType.GetCompoundStructure();
-                        if (compound != null)
-                        {
-                            double thickness = compound.GetWidth();
-                            if (thickness > 0)
-                            {
-                                return thickness;
-                            }
-                        }
-                    }
-                    catch
-                    {
-                        // Continue
-                    }
-
-                    // Method 2: Get from "Thickness" parameter
-                    try
-                    {
-                        Parameter param = floorType.LookupParameter("Thickness");
-                        if (param != null && param.HasValue && param.AsDouble() > 0)
-                        {
-                            return param.AsDouble();
-                        }
-                    }
-                    catch
-                    {
-                        // Continue
-                    }
-
-                    return 0;
-                }
-                catch
-                {
-                    return 0;
-                }
-            }
-
-            private void BtnOK_Click(object sender, EventArgs e)
-            {
-                if (_cmbFloorType.SelectedIndex < 0)
-                {
-                    WinForms.MessageBox.Show("Please select a floor type!", "Warning");
-                    return;
-                }
-
-                try
-                {
-                    string displayName = _cmbFloorType.SelectedItem.ToString();
-                    string floorTypeName = displayName.Split(new[] { " (" }, StringSplitOptions.None)[0];
-
-                    if (_floorTypesDict.ContainsKey(floorTypeName))
-                    {
-                        SelectedFloorType = _floorTypesDict[floorTypeName];
-                        SelectedFloorTypeName = floorTypeName;
-                        this.DialogResult = WinForms.DialogResult.OK;
-                        this.Close();
-                    }
-                    else
-                    {
-                        WinForms.MessageBox.Show($"Floor type not found: {floorTypeName}", "Error");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    WinForms.MessageBox.Show($"Error: {ex.Message}", "Error");
-                }
-            }
-
-            private void BtnCancel_Click(object sender, EventArgs e)
-            {
-                this.DialogResult = WinForms.DialogResult.Cancel;
-                this.Close();
-            }
-        }
-
-        // =============================================================================
-        // GEOMETRY PROCESSING
-        // =============================================================================
-
-        private List<Curve> GetFaceBoundaryCurves(Face face)
-        {
-            List<Curve> curves = new List<Curve>();
-            try
-            {
-                EdgeArrayArray edgeArrayArray = face.EdgeLoops;
-                if (edgeArrayArray.Size == 0)
-                {
-                    return null;
-                }
-
-                EdgeArray outerLoop = edgeArrayArray.get_Item(0);
-
-                for (int i = 0; i < outerLoop.Size; i++)
-                {
-                    try
-                    {
-                        Edge edge = outerLoop.get_Item(i);
-                        Curve curve = edge.AsCurve();
-                        if (curve != null && curve.Length >= MIN_CURVE_LENGTH)
-                        {
-                            curves.Add(curve);
-                        }
-                    }
-                    catch
-                    {
-                        continue;
-                    }
-                }
-
-                return curves.Count > 0 ? curves : null;
-            }
-            catch
-            {
-                return null;
-            }
-        }
-
-        private int GetFaceNormalDirection(Face face)
-        {
-            // Return: 1=TOP (UP), -1=BOTTOM (DOWN), 0=UNKNOWN
             try
             {
                 BoundingBoxUV bbox = face.GetBoundingBox();
                 if (bbox != null)
                 {
-                    UV centerUV = new UV((bbox.Min.U + bbox.Max.U) / 2, (bbox.Min.V + bbox.Max.V) / 2);
+                    UV centerUV = new UV(
+                        (bbox.Min.U + bbox.Max.U) / 2.0,
+                        (bbox.Min.V + bbox.Max.V) / 2.0
+                    );
                     XYZ normal = face.ComputeNormal(centerUV);
-
-                    if (normal.Z > 0.5)
-                    {
-                        return 1;
-                    }
-                    else if (normal.Z < -0.5)
-                    {
-                        return -1;
-                    }
+                    double angleTolerance = Math.Cos(Math.PI / 36.0); // 5 degrees
+                    return Math.Abs(normal.Z) <= angleTolerance;
                 }
-                return 0;
+                return false;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private int GetFaceNormalDirection(Face face)
+        {
+            // Return: 1 = TOP, -1 = BOTTOM, 0 = UNKNOWN
+            try
+            {
+                BoundingBoxUV bbox = face.GetBoundingBox();
+                if (bbox != null)
+                {
+                    UV centerUV = new UV(
+                        (bbox.Min.U + bbox.Max.U) / 2.0,
+                        (bbox.Min.V + bbox.Max.V) / 2.0
+                    );
+                    XYZ normal = face.ComputeNormal(centerUV);
+                    if (normal.Z > 0.5)
+                        return 1;  // TOP
+                    else if (normal.Z < -0.5)
+                        return -1; // BOTTOM
+                }
+                return 0; // UNKNOWN
             }
             catch
             {
@@ -624,307 +230,885 @@ namespace SimpleBIM.Commands.As
             }
         }
 
-        private List<Curve> OrderCurvesForLoop(List<Curve> curves)
+        private double? GetSlopeFromFaceNormal(Face face)
         {
             try
             {
-                if (curves == null || curves.Count == 0)
+                BoundingBoxUV bbox = face.GetBoundingBox();
+                if (bbox != null)
                 {
-                    return new List<Curve>();
+                    UV centerUV = new UV(
+                        (bbox.Min.U + bbox.Max.U) / 2.0,
+                        (bbox.Min.V + bbox.Max.V) / 2.0
+                    );
+                    XYZ normal = face.ComputeNormal(centerUV);
+                    double nzAbs = Math.Abs(Math.Max(-1.0, Math.Min(1.0, normal.Z)));
+                    double angleRad = Math.Acos(nzAbs);
+                    double angleDeg = angleRad * (180.0 / Math.PI);
+                    if (angleDeg > 90)
+                    {
+                        angleDeg = 180 - angleDeg;
+                    }
+                    return angleDeg;
+                }
+                return null;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        // ============================================================================
+        // POINT EXTRACTION & PROCESSING - PYTHON EQUIVALENT WITH TRANSFORM
+        // ============================================================================
+
+        private List<XYZ> ExtractAllFacePoints(Face face, Element element)
+        {
+            try
+            {
+                List<XYZ> allPoints = new List<XYZ>();
+
+                // Extract all points from edge loops
+                foreach (EdgeArray edgeLoop in face.EdgeLoops)
+                {
+                    foreach (Edge edge in edgeLoop)
+                    {
+                        Curve curve = edge.AsCurve();
+                        if (curve != null)
+                        {
+                            allPoints.Add(curve.GetEndPoint(0));
+                            allPoints.Add(curve.GetEndPoint(1));
+                        }
+                    }
                 }
 
-                List<Curve> remaining = new List<Curve>(curves);
-                List<Curve> ordered = new List<Curve> { remaining[0] };
-                remaining.RemoveAt(0);
-
-                while (remaining.Count > 0)
+                // Apply transform like Python version
+                List<XYZ> originalPoints = new List<XYZ>();
+                try
                 {
-                    XYZ lastEnd = ordered[ordered.Count - 1].GetEndPoint(1);
-                    int bestIdx = -1;
-                    bool bestReversed = false;
-                    double bestDist = double.MaxValue;
+                    Transform transform = null;
 
-                    for (int i = 0; i < remaining.Count; i++)
+                    if (element is FamilyInstance familyInstance)
                     {
-                        Curve curve = remaining[i];
-                        double dStart = lastEnd.DistanceTo(curve.GetEndPoint(0));
-                        double dEnd = lastEnd.DistanceTo(curve.GetEndPoint(1));
+                        transform = familyInstance.GetTransform();
+                    }
+                    else
+                    {
+                        transform = Transform.Identity;
+                    }
 
-                        if (dStart < bestDist)
+                    if (transform != null && !transform.IsIdentity)
+                    {
+                        foreach (XYZ pt in allPoints)
                         {
-                            bestDist = dStart;
-                            bestIdx = i;
-                            bestReversed = false;
+                            originalPoints.Add(transform.OfPoint(pt));
                         }
+                    }
+                    else
+                    {
+                        originalPoints = allPoints;
+                    }
+                }
+                catch
+                {
+                    originalPoints = allPoints;
+                }
 
-                        if (dEnd < bestDist)
+                return originalPoints;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private List<XYZ> CleanupDuplicatePoints(List<XYZ> points)
+        {
+            if (points == null || points.Count == 0)
+                return new List<XYZ>();
+
+            List<XYZ> uniquePoints = new List<XYZ>();
+            double tolerance = 0.001;
+
+            foreach (XYZ pt in points)
+            {
+                bool isDuplicate = false;
+                foreach (XYZ existing in uniquePoints)
+                {
+                    double dx = pt.X - existing.X;
+                    double dy = pt.Y - existing.Y;
+                    double dz = pt.Z - existing.Z;
+                    double dist3d = Math.Sqrt(dx * dx + dy * dy + dz * dz);
+                    if (dist3d < tolerance)
+                    {
+                        isDuplicate = true;
+                        break;
+                    }
+                }
+                if (!isDuplicate)
+                {
+                    uniquePoints.Add(pt);
+                }
+            }
+
+            // Sort points by angle (Python equivalent)
+            if (uniquePoints.Count >= 3)
+            {
+                double centerX = uniquePoints.Sum(pt => pt.X) / uniquePoints.Count;
+                double centerY = uniquePoints.Sum(pt => pt.Y) / uniquePoints.Count;
+
+                double GetAngle(XYZ point)
+                {
+                    return Math.Atan2(point.Y - centerY, point.X - centerX);
+                }
+
+                uniquePoints = uniquePoints.OrderBy(GetAngle).ToList();
+            }
+
+            return uniquePoints;
+        }
+
+        // ============================================================================
+        // LEVEL EXTRACTION - PYTHON EQUIVALENT (5 METHODS)
+        // ============================================================================
+
+        private (Level level, bool success, string message) GetLevelFromElement(Element element)
+        {
+            try
+            {
+                // Method 1: Direct LevelId
+                try
+                {
+                    if (element.LevelId != null &&
+                        element.LevelId != ElementId.InvalidElementId)
+                    {
+                        Level level = _doc.GetElement(element.LevelId) as Level;
+                        if (level != null)
                         {
-                            bestDist = dEnd;
-                            bestIdx = i;
-                            bestReversed = true;
+                            return (level, true, $"Using element LevelId: {level.Name}");
+                        }
+                    }
+                }
+                catch { }
+
+                // Method 2: Level parameter
+                try
+                {
+                    Parameter levelParam = element.LookupParameter("Level");
+                    if (levelParam != null && levelParam.HasValue)
+                    {
+                        ElementId levelId = levelParam.AsElementId();
+                        if (levelId != null && levelId != ElementId.InvalidElementId)
+                        {
+                            Level level = _doc.GetElement(levelId) as Level;
+                            if (level != null)
+                            {
+                                return (level, true, $"Using Level parameter: {level.Name}");
+                            }
+                        }
+                    }
+                }
+                catch { }
+
+                // Method 3: Base Level parameter
+                try
+                {
+                    Parameter baseLevelParam = element.LookupParameter("Base Level");
+                    if (baseLevelParam != null && baseLevelParam.HasValue)
+                    {
+                        ElementId levelId = baseLevelParam.AsElementId();
+                        if (levelId != null && levelId != ElementId.InvalidElementId)
+                        {
+                            Level level = _doc.GetElement(levelId) as Level;
+                            if (level != null)
+                            {
+                                return (level, true, $"Using Base Level parameter: {level.Name}");
+                            }
+                        }
+                    }
+                }
+                catch { }
+
+                // Method 4: Get lowest level
+                try
+                {
+                    FilteredElementCollector collector = new FilteredElementCollector(_doc)
+                        .OfClass(typeof(Level));
+                    List<Level> allLevels = collector.Cast<Level>().ToList();
+
+                    if (allLevels.Count > 0)
+                    {
+                        Level lowestLevel = allLevels.OrderBy(l => l.Elevation).First();
+                        return (lowestLevel, true, $"Using lowest level: {lowestLevel.Name}");
+                    }
+                }
+                catch { }
+
+                // Method 5: Use default level
+                try
+                {
+                    FilteredElementCollector collector = new FilteredElementCollector(_doc)
+                        .OfClass(typeof(Level));
+                    List<Level> allLevels = collector.Cast<Level>().ToList();
+
+                    foreach (Level lvl in allLevels)
+                    {
+                        if (lvl.Name == "0" || lvl.Name == "Ground Floor")
+                        {
+                            return (lvl, true, $"Using default level: {lvl.Name}");
                         }
                     }
 
-                    if (bestIdx >= 0 && bestDist < 0.01)
+                    if (allLevels.Count > 0)
                     {
-                        if (bestReversed)
+                        return (allLevels[0], true, $"Using first available level: {allLevels[0].Name}");
+                    }
+                }
+                catch { }
+
+                return (null, false, "Cannot find any level!");
+            }
+            catch (Exception ex)
+            {
+                return (null, false, $"Error getting level: {ex.Message}");
+            }
+        }
+
+        // ============================================================================
+        // FLOOR CREATION WITH SLOPE - PYTHON EQUIVALENT
+        // ============================================================================
+
+        private (Floor floor, bool success, string message) CreateSlopedFloor(
+            List<XYZ> points, Level level, FloorType floorType,
+            double slopeDegrees, bool isStructural, int faceIdx)
+        {
+            try
+            {
+                double minZ = points.Min(pt => pt.Z);
+                double maxZ = points.Max(pt => pt.Z);
+                double levelElevation = level.Elevation;
+
+                double thickness = GetFloorTypeThickness(floorType);
+                PrintDebug($"[FACE {faceIdx + 1}] Floor type thickness: {thickness:F3}");
+
+                double elevationDiff = minZ - levelElevation;
+                PrintDebug($"[FACE {faceIdx + 1}] Min Z: {minZ:F3}, Level Elev: {levelElevation:F3}, Diff: {elevationDiff:F3}");
+
+                // ========================================================
+                // STEP 1: Create CurveLoop at level elevation
+                // ========================================================
+                List<XYZ> flattenedPoints = points
+                    .Select(pt => new XYZ(pt.X, pt.Y, levelElevation))
+                    .ToList();
+
+                CurveLoop curveLoop = new CurveLoop();
+                int curveCount = 0;
+
+                for (int i = 0; i < flattenedPoints.Count; i++)
+                {
+                    XYZ startPt = flattenedPoints[i];
+                    XYZ endPt = flattenedPoints[(i + 1) % flattenedPoints.Count];
+                    double dx = endPt.X - startPt.X;
+                    double dy = endPt.Y - startPt.Y;
+                    double dist = Math.Sqrt(dx * dx + dy * dy);
+
+                    if (dist > 0.001)
+                    {
+                        curveLoop.Append(Line.CreateBound(startPt, endPt));
+                        curveCount++;
+                    }
+                }
+
+                if (curveCount < 3)
+                {
+                    return (null, false, $"CurveLoop has {curveCount} curves (need 3+)");
+                }
+
+                // ========================================================
+                // STEP 2: Find lowest edge
+                // ========================================================
+                double tolerance = 0.001;
+                List<XYZ> lowestPoints = points
+                    .Where(p => Math.Abs(p.Z - minZ) < tolerance)
+                    .ToList();
+
+                PrintDebug($"[FACE {faceIdx + 1}] Min Z: {minZ:F3}, Lowest points: {lowestPoints.Count}");
+
+                // Find curves corresponding to lowest edge
+                List<(Curve curve, double length, XYZ start, XYZ end)> lowestCurves =
+                    new List<(Curve, double, XYZ, XYZ)>();
+
+                foreach (Curve curve in curveLoop)
+                {
+                    XYZ startPt = curve.GetEndPoint(0);
+                    XYZ endPt = curve.GetEndPoint(1);
+
+                    bool startIsLow = lowestPoints.Any(lp =>
+                        Math.Abs(startPt.X - lp.X) < 0.01 &&
+                        Math.Abs(startPt.Y - lp.Y) < 0.01);
+
+                    bool endIsLow = lowestPoints.Any(lp =>
+                        Math.Abs(endPt.X - lp.X) < 0.01 &&
+                        Math.Abs(endPt.Y - lp.Y) < 0.01);
+
+                    if (startIsLow && endIsLow)
+                    {
+                        lowestCurves.Add((curve, curve.Length, startPt, endPt));
+                    }
+                }
+
+                XYZ tailStart, tailEnd;
+
+                if (lowestCurves.Count == 0)
+                {
+                    PrintDebug($"[FACE {faceIdx + 1}] No lowest edge found");
+
+                    // Fallback: use longest curve
+                    Curve longestCurve = null;
+                    double maxLength = 0.0;
+                    foreach (Curve curve in curveLoop)
+                    {
+                        if (curve.Length > maxLength)
                         {
-                            ordered.Add(remaining[bestIdx].CreateReversed());
+                            maxLength = curve.Length;
+                            longestCurve = curve;
+                        }
+                    }
+
+                    if (longestCurve != null)
+                    {
+                        tailStart = longestCurve.GetEndPoint(0);
+                        tailEnd = longestCurve.GetEndPoint(1);
+                    }
+                    else
+                    {
+double fallbackCenterX = flattenedPoints.Sum(pt => pt.X) / flattenedPoints.Count;
+                        double fallbackCenterY = flattenedPoints.Sum(pt => pt.Y) / flattenedPoints.Count;
+                        tailStart = new XYZ(fallbackCenterX - 2.0, fallbackCenterY, levelElevation);
+                        tailEnd = new XYZ(fallbackCenterX + 2.0, fallbackCenterY, levelElevation);
+                    }
+                }
+                else
+                {
+                    var bestCurve = lowestCurves.OrderByDescending(x => x.length).First();
+                    tailStart = bestCurve.start;
+                    tailEnd = bestCurve.end;
+                    PrintDebug($"[FACE {faceIdx + 1}] Using lowest edge, length: {bestCurve.length:F3}");
+                }
+
+                // ========================================================
+                // STEP 3: Calculate Slope Arrow - FROM lowest edge
+                // ========================================================
+                double edgeDirX = tailEnd.X - tailStart.X;
+                double edgeDirY = tailEnd.Y - tailStart.Y;
+                double edgeLength = Math.Sqrt(edgeDirX * edgeDirX + edgeDirY * edgeDirY);
+
+                if (edgeLength > 0.001)
+                {
+                    edgeDirX /= edgeLength;
+                    edgeDirY /= edgeLength;
+                }
+
+                // Perpendicular direction (rotate 90° CCW)
+                double perpDirX = -edgeDirY;
+                double perpDirY = edgeDirX;
+
+                // Center ON lowest edge
+                double midX = (tailStart.X + tailEnd.X) / 2.0;
+                double midY = (tailStart.Y + tailEnd.Y) / 2.0;
+                double centerZ = levelElevation;
+                XYZ slopeArrowStart = new XYZ(midX, midY, centerZ);
+
+                // Dynamic offset based on edge length
+                double offset = edgeLength * 0.15;  // 15% of edge length
+                offset = Math.Max(0.5, Math.Min(5.0, offset));  // Clamp: 0.5 ≤ offset ≤ 5.0
+
+                XYZ slopeArrowEnd = new XYZ(
+                    midX + perpDirX * offset,
+                    midY + perpDirY * offset,
+                    centerZ
+                );
+
+                Line slopeArrow = Line.CreateBound(slopeArrowStart, slopeArrowEnd);
+
+                PrintDebug($"[FACE {faceIdx + 1}] Slope arrow: from ({slopeArrowStart.X:F2}, {slopeArrowStart.Y:F2}) " +
+                          $"to ({slopeArrowEnd.X:F2}, {slopeArrowEnd.Y:F2}), length={offset:F2}");
+
+                // ========================================================
+                // STEP 4: Create floor with slope
+                // ========================================================
+                ElementId floorTypeId = floorType?.Id ?? Floor.GetDefaultFloorType(_doc, isStructural);
+                double slopeRadians = slopeDegrees * (Math.PI / 180.0);
+
+                try
+                {
+                    PrintDebug($"[FACE {faceIdx + 1}] Creating floor at level elevation: slope={slopeDegrees:F1}deg");
+
+                    Floor floor = Floor.Create(
+                        _doc,
+                        new List<CurveLoop> { curveLoop },
+                        floorTypeId,
+                        level.Id,
+                        isStructural,
+                        slopeArrow,
+                        slopeRadians
+                    );
+
+                    if (floor == null)
+                    {
+                        PrintDebug($"[FACE {faceIdx + 1}] Floor.Create returned null");
+                        return (null, false, "Floor.Create() returned null");
+                    }
+
+                    PrintDebug($"[FACE {faceIdx + 1}] Floor created: ID={floor.Id.IntegerValue}");
+
+                    // ========================================================
+                    // STEP 5: Adjust floor elevation
+                    // ========================================================
+                    double finalOffset = elevationDiff;
+                    PrintDebug($"[FACE {faceIdx + 1}] Final offset needed: {finalOffset:F3}");
+
+                    bool offsetAssigned = false;
+
+                    string[] offsetParamNames = new string[]
+                    {
+                        "Base Offset",
+                        "Level Offset",
+                        "Offset",
+                        "Height Offset",
+                        "Base Level Offset"
+                    };
+
+                    foreach (string paramName in offsetParamNames)
+                    {
+                        try
+                        {
+                            Parameter param = floor.LookupParameter(paramName);
+                            if (param != null && !param.IsReadOnly)
+                            {
+                                param.Set(finalOffset);
+                                PrintDebug($"[FACE {faceIdx + 1}] ✓ Set {paramName} = {finalOffset:F3}");
+                                offsetAssigned = true;
+                                break;
+                            }
+                        }
+                        catch { continue; }
+                    }
+
+                    if (!offsetAssigned)
+                    {
+                        try
+                        {
+                            PrintDebug($"[FACE {faceIdx + 1}] Using Move command to adjust elevation...");
+
+                            XYZ moveVector = new XYZ(0, 0, finalOffset);
+                            ElementTransformUtils.MoveElement(_doc, floor.Id, moveVector);
+
+                            PrintDebug($"[FACE {faceIdx + 1}] ✓ Moved floor by {finalOffset:F3}");
+                            offsetAssigned = true;
+                        }
+                        catch (Exception moveEx)
+                        {
+                            PrintDebug($"[FACE {faceIdx + 1}] Error moving floor: {moveEx.Message}");
+                        }
+                    }
+
+                    // ========================================================
+                    // STEP 6: Update slope
+                    // ========================================================
+                    try
+                    {
+                        Parameter slopeParam = floor.LookupParameter("Slope");
+                        if (slopeParam != null && !slopeParam.IsReadOnly)
+                        {
+                            double slopeRatio = Math.Tan(slopeRadians);
+                            slopeParam.Set(slopeRatio);
+                            PrintDebug($"[FACE {faceIdx + 1}] ✓ Updated slope ratio: {slopeRatio:F3}");
+                        }
+                    }
+                    catch { }
+
+                    PrintDebug($"[FACE {faceIdx + 1}] ✓ Floor created successfully, matches original face");
+
+                    return (floor, true, $"Floor created ID: {floor.Id.IntegerValue}");
+                }
+                catch (Exception ex)
+                {
+                    PrintDebug($"[FACE {faceIdx + 1}] Floor.Create error: {ex.Message}");
+                    return (null, false, $"Floor.Create error: {ex.Message}");
+                }
+            }
+            catch (Exception ex)
+            {
+                PrintDebug($"[FACE {faceIdx + 1}] Error: {ex.Message}");
+                return (null, false, $"Error: {ex.Message}");
+            }
+        }
+
+        // ============================================================================
+        // FLOOR TYPE SELECTOR - PYTHON EQUIVALENT
+        // ============================================================================
+
+        private List<(string name, FloorType floorType)> GetAllFloorTypes()
+        {
+            try
+            {
+                FilteredElementCollector collector = new FilteredElementCollector(_doc)
+                    .OfClass(typeof(FloorType));
+
+                List<(string, FloorType)> floorTypeList = new List<(string, FloorType)>();
+
+                foreach (FloorType ft in collector)
+                {
+                    try
+                    {
+                        Parameter nameParam = ft.get_Parameter(BuiltInParameter.ALL_MODEL_TYPE_NAME);
+                        string typeName;
+                        if (nameParam != null && nameParam.HasValue)
+                        {
+                            typeName = nameParam.AsString();
                         }
                         else
                         {
-                            ordered.Add(remaining[bestIdx]);
+                            typeName = $"Floor Type {ft.Id.IntegerValue}";
                         }
-                        remaining.RemoveAt(bestIdx);
+
+                        floorTypeList.Add((typeName, ft));
+                    }
+                    catch
+                    {
+                        floorTypeList.Add(($"Floor Type {ft.Id.IntegerValue}", ft));
+                    }
+                }
+
+                return floorTypeList;
+            }
+            catch
+            {
+                return new List<(string, FloorType)>();
+            }
+        }
+
+        private (FloorType floorType, string floorTypeName) ShowFloorTypeSelector()
+        {
+            try
+            {
+                List<(string name, FloorType floorType)> floorTypes = GetAllFloorTypes();
+                if (floorTypes == null || floorTypes.Count == 0)
+                {
+                    ShowError("No floor types found!");
+                    return (null, null);
+                }
+
+                Dictionary<string, FloorType> typeDict = floorTypes
+                    .ToDictionary(x => x.name, x => x.floorType);
+                List<string> typeNames = typeDict.Keys.OrderBy(x => x).ToList();
+
+                using (WinForms.Form form = new WinForms.Form())
+                {
+                    form.Text = "Select Floor Type";
+                    form.Width = 450;
+                    form.Height = 380;
+                    form.FormBorderStyle = WinForms.FormBorderStyle.FixedDialog;
+                    form.MaximizeBox = false;
+                    form.MinimizeBox = false;
+                    form.StartPosition = WinForms.FormStartPosition.CenterScreen;
+
+                    WinForms.Label label = new WinForms.Label
+                    {
+                        Text = "Select floor type:",
+                        Location = new Drawing.Point(15, 15),
+                        Width = 400,
+                        Height = 25
+                    };
+                    form.Controls.Add(label);
+
+                    WinForms.ListBox listbox = new WinForms.ListBox
+                    {
+                        Location = new Drawing.Point(15, 45),
+                        Width = 400,
+                        Height = 230
+                    };
+
+                    int defaultIdx = 0;
+                    for (int i = 0; i < typeNames.Count; i++)
+                    {
+                        string name = typeNames[i];
+                        listbox.Items.Add(name);
+                        if (name.IndexOf("Generic", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                            name.IndexOf("Basic", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                            name.IndexOf("Standard", StringComparison.OrdinalIgnoreCase) >= 0)
+                        {
+                            defaultIdx = i;
+                        }
+                    }
+
+                    listbox.SelectedIndex = defaultIdx;
+                    form.Controls.Add(listbox);
+
+                    FloorType selectedFloorType = null;
+                    string selectedFloorTypeName = null;
+
+                    WinForms.Button btnOk = new WinForms.Button
+                    {
+                        Text = "OK",
+                        Location = new Drawing.Point(155, 290),
+                        Width = 90,
+                        Height = 35
+                    };
+                    btnOk.Click += (s, e) =>
+                    {
+                        if (listbox.SelectedIndex >= 0)
+                        {
+                            string name = typeNames[listbox.SelectedIndex];
+                            selectedFloorType = typeDict[name];
+                            selectedFloorTypeName = name;
+                        }
+                        form.DialogResult = WinForms.DialogResult.OK;
+                        form.Close();
+                    };
+                    form.Controls.Add(btnOk);
+                    form.AcceptButton = btnOk;
+
+                    WinForms.Button btnCancel = new WinForms.Button
+                    {
+                        Text = "Cancel",
+                        Location = new Drawing.Point(260, 290),
+                        Width = 90,
+                        Height = 35
+                    };
+                    btnCancel.Click += (s, e) =>
+                    {
+                        form.DialogResult = WinForms.DialogResult.Cancel;
+                        form.Close();
+                    };
+                    form.Controls.Add(btnCancel);
+                    form.CancelButton = btnCancel;
+
+                    WinForms.DialogResult result = form.ShowDialog();
+                    if (result == WinForms.DialogResult.OK)
+                    {
+                        return (selectedFloorType, selectedFloorTypeName);
                     }
                     else
+                    {
+                        return (null, null);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                ShowError($"Error: {ex.Message}");
+                return (null, null);
+            }
+        }
+
+        // ============================================================================
+        // BATCH FACE SELECTION - PYTHON EQUIVALENT
+        // ============================================================================
+
+        private class FaceData
+        {
+            public Element Element { get; set; }
+            public Face Face { get; set; }
+            public Reference Reference { get; set; }
+            public int Index { get; set; }
+        }
+
+        private List<FaceData> PickMultipleFaces()
+        {
+            List<FaceData> facesData = new List<FaceData>();
+
+            ShowMessage(
+                "BATCH FLOOR CREATOR\n\n" +
+                "Instructions:\n" +
+                "1. Click OK to start\n" +
+                "2. Select sloped faces one by one\n" +
+                "3. Press ESC when done\n",
+                "Batch Mode"
+            );
+
+            try
+            {
+                while (true)
+                {
+                    try
+                    {
+                        Reference reference = _uidoc.Selection.PickObject(
+                            ObjectType.Face,
+                            "Select sloped face (ESC to finish)"
+                        );
+
+                        Element element = _doc.GetElement(reference.ElementId);
+                        GeometryObject geometryObject = element.GetGeometryObjectFromReference(reference);
+
+                        if (geometryObject is Face face)
+                        {
+                            if (IsFaceSloped(face))
+                            {
+                                facesData.Add(new FaceData
+                                {
+                                    Element = element,
+                                    Face = face,
+                                    Reference = reference,
+                                    Index = facesData.Count + 1
+                                });
+                            }
+                            else
+                            {
+                                ShowWarning("Selected face is not sloped!");
+                            }
+                        }
+                    }
+                    catch (Autodesk.Revit.Exceptions.OperationCanceledException)
+                    {
+                        // User pressed ESC - exit loop
+                        break;
+                    }
+                    catch
                     {
                         break;
                     }
                 }
+            }
+            catch { }
 
-                return ordered;
-            }
-            catch
-            {
-                return curves;
-            }
+            return facesData;
         }
 
-        private CurveLoop CreateCurveLoopFromCurves(List<Curve> curves)
-        {
-            try
-            {
-                List<Curve> ordered = OrderCurvesForLoop(curves);
-                if (ordered == null || ordered.Count == 0)
-                {
-                    return null;
-                }
-
-                List<Curve> final = new List<Curve>(ordered);
-                if (final.Count > 1)
-                {
-                    XYZ lastEnd = final[final.Count - 1].GetEndPoint(1);
-                    XYZ firstStart = final[0].GetEndPoint(0);
-                    if (lastEnd.DistanceTo(firstStart) > 1e-6)
-                    {
-                        final.Add(Line.CreateBound(lastEnd, firstStart));
-                    }
-                }
-
-                CurveLoop curveLoop = CurveLoop.Create(final);
-                return curveLoop != null && !curveLoop.IsOpen() ? curveLoop : null;
-            }
-            catch
-            {
-                return null;
-            }
-        }
-
-        // =============================================================================
-        // FLOOR CREATION
-        // =============================================================================
-
-        private Floor CreateFloorOnFace(FaceData faceData, FloorType floorType, double thicknessInternal)
-        {
-            try
-            {
-                Face face = faceData.Face;
-
-                int normalDir = GetFaceNormalDirection(face);
-                if (normalDir == 0)
-                {
-                    Debug.WriteLine("DEBUG: Unknown face orientation");
-                    return null;
-                }
-
-                List<Curve> curves = GetFaceBoundaryCurves(face);
-                if (curves == null || curves.Count == 0)
-                {
-                    return null;
-                }
-
-                CurveLoop curveLoop = CreateCurveLoopFromCurves(curves);
-                if (curveLoop == null)
-                {
-                    return null;
-                }
-
-                double faceElev = faceData.Reference.GlobalPoint.Z;
-
-                List<Level> levels = new FilteredElementCollector(_doc)
-                    .OfClass(typeof(Level))
-                    .Cast<Level>()
-                    .ToList();
-
-                if (levels.Count == 0)
-                {
-                    return null;
-                }
-
-                Level closestLevel = levels.OrderBy(l => Math.Abs(l.Elevation - faceElev)).First();
-                double baseOffset = faceElev - closestLevel.Elevation;
-
-                double finalOffset;
-                if (normalDir == 1)
-                {
-                    finalOffset = baseOffset + thicknessInternal;
-                    Debug.WriteLine($"DEBUG: TOP FACE - offset = base + thickness = {finalOffset:F6}");
-                }
-                else
-                {
-                    finalOffset = baseOffset;
-                    Debug.WriteLine($"DEBUG: BOTTOM FACE - offset = base only = {finalOffset:F6}");
-                }
-
-                Floor floor = Floor.Create(_doc, new List<CurveLoop> { curveLoop }, floorType.Id, closestLevel.Id);
-
-                if (floor != null)
-                {
-                    try
-                    {
-                        Parameter param = floor.get_Parameter(BuiltInParameter.FLOOR_HEIGHTABOVELEVEL_PARAM);
-                        if (param != null && !param.IsReadOnly)
-                        {
-                            param.Set(finalOffset);
-                        }
-                    }
-                    catch
-                    {
-                        // Ignore if cannot set offset
-                    }
-                    return floor;
-                }
-
-                return null;
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"DEBUG: Error creating floor: {ex.Message}");
-                return null;
-            }
-        }
-
-        // =============================================================================
-        // MAIN EXECUTION
-        // =============================================================================
+        // ============================================================================
+        // MAIN WORKFLOW - PYTHON EQUIVALENT
+        // ============================================================================
 
         private Result RunMain()
         {
             try
             {
-                Debug.WriteLine("DEBUG: run() started");
-                ShowMessage("Select Face(s) in 3D view\nTOP FACE: offset = base + thickness\nBOTTOM FACE: offset = base only");
-
-                Debug.WriteLine("DEBUG: About to pick faces...");
+                // Step 1: Pick multiple faces
                 List<FaceData> facesData = PickMultipleFaces();
 
                 if (facesData == null || facesData.Count == 0)
                 {
-                    Debug.WriteLine("DEBUG: No faces selected");
+                    ShowError("No faces selected!");
                     return Result.Cancelled;
                 }
 
-                Debug.WriteLine("DEBUG: About to get floor types...");
-                Dictionary<string, FloorType> floorTypes = GetAllFloorTypes();
+                ShowMessage($"Total faces selected: {facesData.Count}", "Summary");
 
-                if (floorTypes == null || floorTypes.Count == 0)
+                // Step 2: Select floor type
+                var (floorType, floorTypeName) = ShowFloorTypeSelector();
+                if (floorType == null)
                 {
-                    ShowError("No floor types found in project");
-                    return Result.Failed;
+                    ShowError("No floor type selected!");
+                    return Result.Cancelled;
                 }
 
-                Debug.WriteLine("DEBUG: Showing floor type selection form...");
-                using (SelectFloorTypeForm form = new SelectFloorTypeForm(floorTypes))
+                // Step 3: Create floors in batch
+                using (Transaction trans = new Transaction(_doc, "Create Multiple Floors with Slope"))
                 {
-                    WinForms.DialogResult result = form.ShowDialog();
+                    trans.Start();
 
-                    if (result != WinForms.DialogResult.OK)
+                    try
                     {
-                        Debug.WriteLine("DEBUG: User cancelled floor type selection");
-                        ShowMessage("Cancelled");
-                        return Result.Cancelled;
+                        int successCount = 0;
+                        int failedCount = 0;
+                        List<string> results = new List<string>();
+
+                        for (int idx = 0; idx < facesData.Count; idx++)
+                        {
+                            FaceData faceData = facesData[idx];
+
+                            try
+                            {
+                                // Extract face info
+                                List<XYZ> originalPoints = ExtractAllFacePoints(
+                                    faceData.Face, faceData.Element);
+
+                                if (originalPoints == null || originalPoints.Count == 0)
+                                {
+                                    results.Add($"Face {idx + 1}: Cannot extract points");
+                                    failedCount++;
+                                    continue;
+                                }
+
+                                List<XYZ> cleanPoints = CleanupDuplicatePoints(originalPoints);
+                                if (cleanPoints.Count < 3)
+                                {
+                                    results.Add($"Face {idx + 1}: Insufficient points ({cleanPoints.Count})");
+                                    failedCount++;
+                                    continue;
+                                }
+
+                                // Get slope
+                                double? slopeDegreesNullable = GetSlopeFromFaceNormal(faceData.Face);
+                                if (!slopeDegreesNullable.HasValue)
+                                {
+                                    results.Add($"Face {idx + 1}: Cannot calculate slope");
+                                    failedCount++;
+                                    continue;
+                                }
+                                double slopeDegrees = slopeDegreesNullable.Value;
+
+                                // Get level
+                                var (level, levelOk, levelMsg) = GetLevelFromElement(faceData.Element);
+                                if (!levelOk || level == null)
+                                {
+                                    results.Add($"Face {idx + 1}: {levelMsg}");
+                                    failedCount++;
+                                    continue;
+                                }
+
+                                // Create sloped floor
+                                var (floor, floorOk, floorMsg) = CreateSlopedFloor(
+                                    cleanPoints, level, floorType, slopeDegrees, true, idx);
+
+                                if (!floorOk || floor == null)
+                                {
+                                    results.Add($"Face {idx + 1}: {floorMsg}");
+                                    failedCount++;
+                                    continue;
+                                }
+
+                                results.Add($"Face {idx + 1}: OK (ID: {floor.Id.IntegerValue}, Slope: {slopeDegrees:F1}deg)");
+                                successCount++;
+                            }
+                            catch (Exception ex)
+                            {
+                                results.Add($"Face {idx + 1}: Exception - {ex.Message}");
+                                failedCount++;
+                            }
+                        }
+
+                        trans.Commit();
+
+                        // Show results
+                        string resultMsg = "BATCH FLOOR CREATION COMPLETE\n\n";
+                        resultMsg += $"SUCCESS: {successCount}\n";
+                        resultMsg += $"FAILED: {failedCount}\n\n";
+                        resultMsg += "Details:\n";
+                        resultMsg += string.Join("\n", results);
+
+                        ShowMessage(resultMsg, "BATCH RESULTS");
+                        return Result.Succeeded;
                     }
-
-                    FloorType floorType = form.SelectedFloorType;
-                    string floorTypeName = form.SelectedFloorTypeName;
-                    Debug.WriteLine($"DEBUG: Selected floor type: {floorTypeName}");
-
-                    Debug.WriteLine("DEBUG: Getting thickness...");
-                    double thickness = GetFloorTypeThickness(floorType);
-                    double thicknessMm = UnitUtils.ConvertFromInternalUnits(thickness, UnitTypeId.Millimeters);
-                    Debug.WriteLine($"DEBUG: Thickness: {thicknessMm:F2}mm");
-
-                    ShowMessage($"Floor Type: {floorTypeName}\nThickness: {thicknessMm:F2}mm\n\nCreating {facesData.Count} floors...");
-
-                    Debug.WriteLine("DEBUG: Starting transaction...");
-                    using (Transaction trans = new Transaction(_doc, "Create Floors from Faces"))
+                    catch (Exception ex)
                     {
-                        trans.Start();
-
                         try
                         {
-                            int created = 0;
-                            for (int idx = 0; idx < facesData.Count; idx++)
-                            {
-                                Debug.WriteLine($"DEBUG: Creating floor {idx + 1}...");
-                                Floor floor = CreateFloorOnFace(facesData[idx], floorType, thickness);
-                                if (floor != null)
-                                {
-                                    created++;
-                                    Debug.WriteLine($"DEBUG: Floor {idx + 1} created successfully");
-                                }
-                                else
-                                {
-                                    Debug.WriteLine($"DEBUG: Floor {idx + 1} failed");
-                                }
-                            }
-
-                            Debug.WriteLine("DEBUG: Committing transaction...");
-                            trans.Commit();
-                            Debug.WriteLine("DEBUG: Transaction committed");
-
-                            string msg = "========== SUCCESS ==========\n\n";
-                            msg += $"Created: {created}/{facesData.Count} floors\n\n";
-                            msg += $"Floor Type: {floorTypeName}\n";
-                            msg += $"Thickness: {thicknessMm:F2}mm\n\n";
-                            msg += "OFFSET LOGIC:\n";
-                            msg += "• TOP FACE: offset = base + thickness\n";
-                            msg += "• BOTTOM FACE: offset = base only";
-
-                            ShowMessage(msg);
-                            Debug.WriteLine("DEBUG: run() completed successfully");
-                            return Result.Succeeded;
-                        }
-                        catch (Exception ex)
-                        {
-                            Debug.WriteLine($"DEBUG: Exception in transaction: {ex.Message}");
                             trans.RollBack();
-                            ShowError($"Error: {ex.Message}");
-                            return Result.Failed;
                         }
+                        catch { }
+
+                        ShowError($"Transaction Error: {ex.Message}");
+                        return Result.Failed;
                     }
                 }
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"DEBUG: Exception in run(): {ex.Message}");
-                ShowError($"Error: {ex.Message}");
+                ShowError($"Main Error: {ex.Message}");
                 return Result.Failed;
-            }
-        }
-
-        // =============================================================================
-        // DEBUG UTILITY
-        // =============================================================================
-
-        private static class Debug
-        {
-            public static void WriteLine(string message)
-            {
-#if DEBUG
-                System.Diagnostics.Debug.WriteLine(message);
-#endif
             }
         }
     }

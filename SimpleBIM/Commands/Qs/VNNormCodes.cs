@@ -21,13 +21,13 @@ using static System.Net.Mime.MediaTypeNames;
 using WinForms = System.Windows.Forms;
 using Drawing = System.Drawing;
 using RevitApplication = Autodesk.Revit.ApplicationServices;
-namespace GanMaDinhMuc_Hybrid
+namespace SimpleBIM.Commands.Qs
 
 
 {
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
-    public class MainCommand : IExternalCommand
+    public class VNNormCodes : IExternalCommand
     {
         private static UIApplication _uiapp;
         private static Document _doc;
@@ -1535,8 +1535,8 @@ namespace GanMaDinhMuc_Hybrid
         {
             try
             {
-                var result1 = SharedFunctions.CreateAndBindSharedParameters(MainCommand.Doc, MainCommand.Doc.Application);
-                var result2 = SharedFunctions.CreateProjectParameters(MainCommand.Doc, MainCommand.Doc.Application);
+                var result1 = SharedFunctions.CreateAndBindSharedParameters(VNNormCodes.Doc, VNNormCodes.Doc.Application);
+                var result2 = SharedFunctions.CreateProjectParameters(VNNormCodes.Doc, VNNormCodes.Doc.Application);
 
                 int successCount = ((List<string>)result1["created"]).Count + ((List<string>)result1["existing"]).Count +
                                  ((List<string>)result2["created"]).Count + ((List<string>)result2["existing"]).Count;
@@ -1998,11 +1998,11 @@ Chúc bạn sử dụng hiệu quả!";
 
         private Dictionary<string, CategoryInfo> GetAllCategoriesFromProject()
         {
-            // Copy code từ MainCommand.GetAllCategoriesFromProject() nhưng sử dụng MainCommand.Doc
+            // Copy code từ VNNormCodes.GetAllCategoriesFromProject() nhưng sử dụng VNNormCodes.Doc
             var categoriesDict = new Dictionary<string, CategoryInfo>();
             HashSet<string> tempCategories = new HashSet<string>();
 
-            FilteredElementCollector collector = new FilteredElementCollector(MainCommand.Doc)
+            FilteredElementCollector collector = new FilteredElementCollector(VNNormCodes.Doc)
                 .WhereElementIsNotElementType();
 
             foreach (Element elem in collector)
@@ -2047,7 +2047,7 @@ Chúc bạn sử dụng hiệu quả!";
 
         private List<Element> GetElementsByCategoryName(string categoryName)
         {
-            // Copy code từ MainCommand.GetElementsByCategoryName()
+            // Copy code từ VNNormCodes.GetElementsByCategoryName()
             List<Element> elements = new List<Element>();
             try
             {
@@ -2055,14 +2055,14 @@ Chúc bạn sử dụng hiệu quả!";
 
                 if (builtinCat.HasValue)
                 {
-                    FilteredElementCollector collector = new FilteredElementCollector(MainCommand.Doc)
+                    FilteredElementCollector collector = new FilteredElementCollector(VNNormCodes.Doc)
                         .OfCategory(builtinCat.Value)
                         .WhereElementIsNotElementType();
                     elements = collector.ToList();
                 }
                 else
                 {
-                    FilteredElementCollector collector = new FilteredElementCollector(MainCommand.Doc)
+                    FilteredElementCollector collector = new FilteredElementCollector(VNNormCodes.Doc)
                         .WhereElementIsNotElementType();
                     foreach (Element elem in collector)
                     {
@@ -2090,7 +2090,7 @@ Chúc bạn sử dụng hiệu quả!";
 
         private BuiltInCategory? GetBuiltinCategory(string categoryName)
         {
-            // Copy code từ MainCommand.GetBuiltinCategory()
+            // Copy code từ VNNormCodes.GetBuiltinCategory()
             Dictionary<string, BuiltInCategory> catMap = new Dictionary<string, BuiltInCategory>
         {
             {"Doors", BuiltInCategory.OST_Doors},
@@ -2113,7 +2113,7 @@ Chúc bạn sử dụng hiệu quả!";
 
         private string GetCategoryTypeByName(string categoryName)
         {
-            // Copy code từ MainCommand.GetCategoryTypeByName()
+            // Copy code từ VNNormCodes.GetCategoryTypeByName()
             Dictionary<string, string> categoryTypeMap = new Dictionary<string, string>
         {
             {"duct", "MEP"}, {"pipe", "MEP"}, {"cable", "MEP"}, {"conduit", "MEP"},
@@ -2170,8 +2170,8 @@ BƯỚC 4: AUTO ASSIGN
                 _infoLabel.Text = "Đang tạo Shared Parameters...";
                 WinForms.Application.DoEvents();
 
-                var result1 = SharedFunctions.CreateAndBindSharedParameters(MainCommand.Doc, MainCommand.Doc.Application);
-                var result2 = SharedFunctions.CreateProjectParameters(MainCommand.Doc, MainCommand.Doc.Application);
+                var result1 = SharedFunctions.CreateAndBindSharedParameters(VNNormCodes.Doc, VNNormCodes.Doc.Application);
+                var result2 = SharedFunctions.CreateProjectParameters(VNNormCodes.Doc, VNNormCodes.Doc.Application);
 
                 int successCount = ((List<string>)result1["created"]).Count + ((List<string>)result1["existing"]).Count +
                                  ((List<string>)result2["created"]).Count + ((List<string>)result2["existing"]).Count;
@@ -2644,7 +2644,7 @@ BƯỚC 4: AUTO ASSIGN
                 allSelectedElements.AddRange(group.Elements);
             }
 
-            using (Transaction t = new Transaction(MainCommand.Doc, $"Gán/Lưu cho {allSelectedElements.Count} elements"))
+            using (Transaction t = new Transaction(VNNormCodes.Doc, $"Gán/Lưu cho {allSelectedElements.Count} elements"))
             {
                 t.Start();
 
@@ -2738,7 +2738,7 @@ BƯỚC 4: AUTO ASSIGN
                 saveDialog.Filter = "JSON Files (*.json)|*.json|All Files (*.*)|*.*";
                 saveDialog.DefaultExt = ".json";
 
-                string docPath = MainCommand.Doc.PathName;
+                string docPath = VNNormCodes.Doc.PathName;
                 if (!string.IsNullOrEmpty(docPath))
                 {
                     string projectFolder = Path.GetDirectoryName(docPath);
@@ -2821,7 +2821,7 @@ BƯỚC 4: AUTO ASSIGN
 
             try
             {
-                var elements = SharedFunctions.GetAllProjectElements(MainCommand.Doc);
+                var elements = SharedFunctions.GetAllProjectElements(VNNormCodes.Doc);
 
                 if (elements == null || elements.Count == 0)
                     return template;
@@ -2842,7 +2842,7 @@ BƯỚC 4: AUTO ASSIGN
 
                         elementsWithMaHieu++;
                         string familyName = SharedFunctions.GetElementFamilyName(elem);
-                        string typeName = SharedFunctions.GetElementTypeName(elem, MainCommand.Doc);
+                        string typeName = SharedFunctions.GetElementTypeName(elem, VNNormCodes.Doc);
                         string category = SharedFunctions.CategorizeElement(elem);
 
                         if (category == "Other")
@@ -2973,7 +2973,7 @@ BƯỚC 4: AUTO ASSIGN
                 openDialog.CheckFileExists = true;
                 openDialog.CheckPathExists = true;
 
-                string docPath = MainCommand.Doc.PathName;
+                string docPath = VNNormCodes.Doc.PathName;
                 if (!string.IsNullOrEmpty(docPath))
                 {
                     string projectFolder = Path.GetDirectoryName(docPath);
@@ -3107,9 +3107,9 @@ BƯỚC 4: AUTO ASSIGN
 
             try
             {
-                var elements = SharedFunctions.GetAllProjectElements(MainCommand.Doc);
+                var elements = SharedFunctions.GetAllProjectElements(VNNormCodes.Doc);
 
-                using (Transaction t = new Transaction(MainCommand.Doc, "Auto Assign by Template"))
+                using (Transaction t = new Transaction(VNNormCodes.Doc, "Auto Assign by Template"))
                 {
                     t.Start();
 
@@ -3129,7 +3129,7 @@ BƯỚC 4: AUTO ASSIGN
 
                                 string category = SharedFunctions.CategorizeElement(elem);
                                 string familyName = SharedFunctions.GetElementFamilyName(elem);
-                                string typeName = SharedFunctions.GetElementTypeName(elem, MainCommand.Doc);
+                                string typeName = SharedFunctions.GetElementTypeName(elem, VNNormCodes.Doc);
 
                                 var categoriesDict = template.ContainsKey("categories") ?
                                     (Dictionary<string, object>)template["categories"] : new Dictionary<string, object>();
@@ -3201,7 +3201,7 @@ BƯỚC 4: AUTO ASSIGN
             try
             {
                 string familyName = SharedFunctions.GetElementFamilyName(element);
-                string typeName = SharedFunctions.GetElementTypeName(element, MainCommand.Doc);
+                string typeName = SharedFunctions.GetElementTypeName(element, VNNormCodes.Doc);
 
                 string ruleFamily = rule.ContainsKey("family") ? rule["family"]?.ToString() ?? "" : "";
                 string ruleType = rule.ContainsKey("type") ? rule["type"]?.ToString() ?? "" : "";
@@ -3252,7 +3252,7 @@ BƯỚC 4: AUTO ASSIGN
                 if (element.Category != null &&
                     (element.Category.Name == "Walls" || element.Category.Name == "Floors" || element.Category.Name == "Roofs"))
                 {
-                    ElementType typeElem = MainCommand.Doc.GetElement(element.GetTypeId()) as ElementType;
+                    ElementType typeElem = VNNormCodes.Doc.GetElement(element.GetTypeId()) as ElementType;
                     if (typeElem != null)
                     {
                         // Sử dụng reflection để gọi GetCompoundStructure
@@ -3270,7 +3270,7 @@ BƯỚC 4: AUTO ASSIGN
                                         ElementId materialId = layer.MaterialId;
                                         if (materialId != ElementId.InvalidElementId)
                                         {
-                                            var matElem = MainCommand.Doc.GetElement(materialId);
+                                            var matElem = VNNormCodes.Doc.GetElement(materialId);
                                             if (matElem != null)
                                                 materials.Add(matElem.Name);
                                         }

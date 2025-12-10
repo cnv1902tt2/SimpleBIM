@@ -47,7 +47,7 @@
                    TextWrapping="Wrap" HorizontalAlignment="Center" Margin="0,0,0,10"/>
 
         <StackPanel Grid.Row="3" HorizontalAlignment="Center" Margin="0,0,0,20">
-            <TextBlock Text="Số điện thoại: 09xxxxxxx" HorizontalAlignment="Center"/>
+            <TextBlock Text="Số điện thoại: +84915898877" HorizontalAlignment="Center"/>
             <TextBlock Text="Email: example@gmail.com" HorizontalAlignment="Center"/>
         </StackPanel>
 

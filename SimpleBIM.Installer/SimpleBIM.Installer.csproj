@@ -71,11 +71,7 @@
     </PreBuildEvent>
   </PropertyGroup>
   <PropertyGroup>
-    <PostBuildEvent>REM Tạo thư mục Confusednếu chưa có
-mkdir "$(TargetDir)Confused"
-
-REM Copy file Installer
-copy /Y "$(TargetDir)SimpleBIM.Installer.exe" "$(TargetDir)Confused\"
-</PostBuildEvent>
+    <PostBuildEvent>
+    </PostBuildEvent>
   </PropertyGroup>
 </Project>
